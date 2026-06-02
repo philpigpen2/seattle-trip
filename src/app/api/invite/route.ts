@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +10,12 @@ const clerkHeaders = {
 };
 
 export async function POST(req: Request) {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  // Use currentUser() to get fresh metadata (not stale JWT claims)
+  const user = await currentUser();
+  const role = user?.publicMetadata?.role as string | undefined;
   if (role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   const { email, inviteRole } = await req.json();

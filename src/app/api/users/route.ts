@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -7,10 +7,11 @@ const CLERK_SECRET = process.env.CLERK_SECRET_KEY!;
 const clerkHeaders = { Authorization: `Bearer ${CLERK_SECRET}` };
 
 export async function GET() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  const user = await currentUser();
+  const role = user?.publicMetadata?.role as string | undefined;
   if (role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   const [usersRes, invitesRes] = await Promise.all([
