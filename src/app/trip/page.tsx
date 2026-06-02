@@ -196,11 +196,17 @@ export default function Home() {
         )}
 
         {/* Participants */}
-        <div className="mb-5">
+        <div className="mb-5 flex items-center gap-4">
           <ParticipantsEditor
             participants={participants}
             onChange={(p) => setData((prev) => prev ? { ...prev, participants: p } : prev)}
           />
+          <button
+            onClick={() => { localStorage.removeItem("onboarding_complete"); setShowOnboarding(true); }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
+          >
+            How to use
+          </button>
         </div>
 
         {data.expenses.length === 0 && (
