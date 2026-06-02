@@ -8,6 +8,8 @@ const headers = {
   Authorization: `token ${GITHUB_TOKEN}`,
   Accept: "application/vnd.github.v3+json",
   "Content-Type": "application/json",
+  "Cache-Control": "no-cache",
+  Pragma: "no-cache",
 };
 
 export async function readExpenses(): Promise<ExpenseData> {

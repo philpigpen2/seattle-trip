@@ -60,11 +60,13 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
+    setTimeout(load, 1200);
   };
 
   const deleteExpense = async (id: string) => {
     setData((prev) => prev ? { ...prev, expenses: prev.expenses.filter((e) => e.id !== id) } : prev);
     await fetch(`/api/expenses/${id}`, { method: "DELETE" });
+    setTimeout(load, 1200);
   };
 
   const handleAdd = (expense: Expense) => {
@@ -110,8 +112,8 @@ export default function Home() {
             <p className="text-sm text-gray-500">May–Jun 2026</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/summary" className="px-3 py-2 rounded-lg border bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-              Summary
+            <Link href="/summary" className="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700">
+              Who owes what →
             </Link>
             <button onClick={() => setShowModal(true)} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
               + Add
