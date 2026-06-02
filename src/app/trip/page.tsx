@@ -6,6 +6,7 @@ import { Expense, ExpenseData } from "@/lib/types";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import ParticipantsEditor from "@/components/ParticipantsEditor";
 import InviteModal from "@/components/InviteModal";
+import OnboardingModal from "@/components/OnboardingModal";
 
 const PERSON_COLORS: Record<string, { header: string; active: string; activeCell: string; inactiveCell: string; paid: string }> = {
   Phil: { header: "text-blue-600",    active: "font-semibold text-blue-700", activeCell: "bg-blue-50",    inactiveCell: "text-blue-300 hover:text-blue-500 hover:bg-blue-50",    paid: "bg-blue-100 text-blue-700" },
@@ -59,6 +60,15 @@ export default function Home() {
   const [showInvite, setShowInvite] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("onboarding_complete");
+  });
+
+  const completeOnboarding = () => {
+    localStorage.setItem("onboarding_complete", "1");
+    setShowOnboarding(false);
+  };
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -297,6 +307,12 @@ export default function Home() {
         <AddExpenseModal participants={participants} onAdd={handleAdd} onClose={() => setShowModal(false)} />
       )}
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
+      {showOnboarding && (
+        <OnboardingModal
+          name={user?.firstName ?? undefined}
+          onDone={completeOnboarding}
+        />
+      )}
     </main>
   );
 }
