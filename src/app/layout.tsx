@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Seattle Trip Expenses",
+  title: "Seattle Trip 🏔️⛅☀️",
   description: "Phil, Matt & Gaz — Seattle May–Jun 2026",
 };
 

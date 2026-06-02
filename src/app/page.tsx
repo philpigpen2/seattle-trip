@@ -115,7 +115,7 @@ export default function Home() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Seattle Trip 🌧️</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Seattle Trip 🏔️⛅☀️</h1>
             <p className="text-sm text-gray-500">May–Jun 2026 · Phil, Matt, Gaz</p>
           </div>
           <div className="flex gap-2">
