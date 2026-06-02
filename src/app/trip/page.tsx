@@ -175,6 +175,12 @@ export default function Home() {
             <button onClick={() => setShowModal(true)} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
               + Add
             </button>
+            <button
+              onClick={() => { localStorage.removeItem("onboarding_complete"); setShowOnboarding(true); }}
+              className="px-3 py-2 rounded-lg border bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+            >
+              ?
+            </button>
             <button onClick={() => signOut({ redirectUrl: "/" })} className="px-3 py-2 rounded-lg border bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
               Sign out
             </button>
@@ -196,17 +202,11 @@ export default function Home() {
         )}
 
         {/* Participants */}
-        <div className="mb-5 flex items-center gap-4">
+        <div className="mb-5">
           <ParticipantsEditor
             participants={participants}
             onChange={(p) => setData((prev) => prev ? { ...prev, participants: p } : prev)}
           />
-          <button
-            onClick={() => { localStorage.removeItem("onboarding_complete"); setShowOnboarding(true); }}
-            className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
-          >
-            How to use
-          </button>
         </div>
 
         {data.expenses.length === 0 && (
