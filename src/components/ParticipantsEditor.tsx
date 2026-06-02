@@ -38,9 +38,10 @@ export default function ParticipantsEditor({ participants, onChange }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="bg-white border rounded-xl p-4 flex flex-wrap items-center gap-3">
+      <span className="text-sm font-medium text-gray-700 mr-1">People:</span>
       {names.map((name, i) => (
-        <div key={i} className="flex items-center gap-1">
+        <div key={i} className="flex items-center gap-1.5 bg-gray-50 border rounded-lg px-2 py-1">
           <input
             value={name}
             onChange={(e) => {
@@ -48,23 +49,37 @@ export default function ParticipantsEditor({ participants, onChange }: Props) {
               next[i] = e.target.value;
               setNames(next);
             }}
-            className="border rounded px-2 py-1 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="text-sm text-gray-900 bg-transparent w-24 focus:outline-none placeholder-gray-400"
+            placeholder="Name"
           />
           {names.length > 1 && (
-            <button onClick={() => setNames(names.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-500 text-sm">×</button>
+            <button
+              onClick={() => setNames(names.filter((_, j) => j !== i))}
+              className="text-gray-400 hover:text-red-500 text-base leading-none ml-1"
+            >
+              ×
+            </button>
           )}
         </div>
       ))}
       <button
         onClick={() => setNames([...names, ""])}
-        className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
       >
-        + Add
+        + Add person
       </button>
-      <button onClick={save} disabled={saving} className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50">
-        {saving ? "Saving..." : "Save"}
-      </button>
-      <button onClick={close} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+      <div className="flex gap-2 ml-auto">
+        <button onClick={close} className="px-3 py-1.5 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+          Cancel
+        </button>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -162,7 +162,7 @@ export default function Home() {
                         Total{sortIcon("amount")}
                       </th>
                       {participants.map((name) => (
-                        <th key={name} className={`text-right px-4 py-3 font-semibold w-24 ${(PERSON_COLORS[name] ?? defaultStyle).header}`}>
+                        <th key={name} className={`text-center px-4 py-3 font-semibold w-24 ${(PERSON_COLORS[name] ?? defaultStyle).header}`}>
                           {name}
                         </th>
                       ))}
@@ -194,13 +194,22 @@ export default function Home() {
                             return (
                               <td
                                 key={name}
-                                className={`px-4 py-3 text-right whitespace-nowrap cursor-pointer select-none transition-colors ${inSplit ? style.activeCell : ""}`}
+                                className={`px-4 py-3 text-center whitespace-nowrap cursor-pointer select-none transition-colors ${inSplit ? style.activeCell : ""}`}
                                 onClick={() => togglePerson(expense, name)}
-                                title={inSplit ? `Click to remove ${name}` : `Click to add ${name}`}
                               >
-                                <span className={inSplit ? style.active : style.inactiveCell}>
-                                  {inSplit ? `$${share.toFixed(2)}` : `+ $${(expense.amount / (expense.split.length + 1)).toFixed(2)}`}
-                                </span>
+                                <label className="flex flex-col items-center gap-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={inSplit}
+                                    onChange={() => togglePerson(expense, name)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-4 h-4 cursor-pointer accent-current"
+                                    style={{ accentColor: inSplit ? undefined : "#d1d5db" }}
+                                  />
+                                  {inSplit && (
+                                    <span className={`text-xs ${style.active}`}>${share.toFixed(2)}</span>
+                                  )}
+                                </label>
                               </td>
                             );
                           })}
