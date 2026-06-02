@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { Expense, ExpenseData } from "@/lib/types";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import ParticipantsEditor from "@/components/ParticipantsEditor";
+import InviteModal from "@/components/InviteModal";
 
 const PERSON_COLORS: Record<string, { header: string; active: string; activeCell: string; inactiveCell: string; paid: string }> = {
   Phil: { header: "text-blue-600",    active: "font-semibold text-blue-700", activeCell: "bg-blue-50",    inactiveCell: "text-blue-300 hover:text-blue-500 hover:bg-blue-50",    paid: "bg-blue-100 text-blue-700" },
@@ -47,12 +49,26 @@ function calcSettlements(participants: string[], expenses: Expense[]) {
 }
 
 export default function Home() {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const isAdmin = user?.publicMetadata?.role === "admin";
+  const hasRole = !!user?.publicMetadata?.role;
+
   const [data, setData] = useState<ExpenseData | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState(false);
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const bootstrap = async () => {
+    setBootstrapping(true);
+    await fetch("/api/bootstrap", { method: "POST" });
+    await user?.reload();
+    setBootstrapping(false);
+  };
 
   const load = useCallback(async () => {
     const res = await fetch("/api/expenses", { cache: "no-store" });
@@ -135,9 +151,24 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-gray-900">Seattle Trip 🏔️⛅☀️</h1>
             <p className="text-sm text-gray-500">May–Jun 2026</p>
           </div>
-          <button onClick={() => setShowModal(true)} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-            + Add
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button onClick={() => setShowInvite(true)} className="px-3 py-2 rounded-lg border bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                People
+              </button>
+            )}
+            {!hasRole && (
+              <button onClick={bootstrap} disabled={bootstrapping} className="px-3 py-2 rounded-lg border bg-amber-50 text-sm font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50">
+                {bootstrapping ? "Setting up..." : "Set up as admin"}
+              </button>
+            )}
+            <button onClick={() => setShowModal(true)} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+              + Add
+            </button>
+            <button onClick={() => signOut({ redirectUrl: "/" })} className="px-3 py-2 rounded-lg border bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              Sign out
+            </button>
+          </div>
         </div>
 
         {/* Settle-up strip */}
@@ -265,6 +296,7 @@ export default function Home() {
       {showModal && (
         <AddExpenseModal participants={participants} onAdd={handleAdd} onClose={() => setShowModal(false)} />
       )}
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
     </main>
   );
 }
