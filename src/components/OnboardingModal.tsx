@@ -19,6 +19,11 @@ const STEPS = [
     body: "The coloured pill on each row shows who actually put it on their card. Tap it to change it if it's wrong.",
   },
   {
+    emoji: "➕",
+    title: "Add your own expenses",
+    body: "If you paid for something that isn't on the list, tap + Add in the top right. Enter what it was, how much, who paid, and who's splitting it.",
+  },
+  {
     emoji: "💰",
     title: "See who owes what",
     body: "The cards at the top of the page update live as you check things off. That's the final word on who pays whom.",
