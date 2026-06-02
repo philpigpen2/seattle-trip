@@ -8,6 +8,7 @@ export interface Expense {
   notes: string;
   addedBy?: string;
   category?: string;
+  paidBy?: string;
 }
 
 export interface ExpenseData {
