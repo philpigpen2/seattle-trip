@@ -28,13 +28,17 @@ export async function readExpenses(): Promise<ExpenseData> {
 }
 
 export async function writeExpenses(data: ExpenseData): Promise<void> {
-  await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+  const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
     method: "PATCH",
     headers,
     body: JSON.stringify({
       files: { [FILE_NAME]: { content: JSON.stringify(data, null, 2) } },
     }),
   });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gist write failed (${res.status}): ${err}`);
+  }
 }
 
 function getDefaultData(): ExpenseData {

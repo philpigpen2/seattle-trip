@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { readExpenses, writeExpenses } from "@/lib/blob";
 
+export const dynamic = "force-dynamic";
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.json();

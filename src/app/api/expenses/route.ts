@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { readExpenses, writeExpenses } from "@/lib/blob";
 import { v4 as uuidv4 } from "uuid";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const data = await readExpenses();
   return NextResponse.json(data);

@@ -6,12 +6,12 @@ import { Expense, ExpenseData } from "@/lib/types";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import ParticipantsEditor from "@/components/ParticipantsEditor";
 
-const PERSON_COLORS: Record<string, { header: string; active: string; inactive: string; paid: string }> = {
-  Phil: { header: "text-blue-600",    active: "text-blue-700 font-semibold",    inactive: "text-gray-200 hover:text-blue-300",    paid: "bg-blue-100 text-blue-700" },
-  Matt: { header: "text-emerald-600", active: "text-emerald-700 font-semibold", inactive: "text-gray-200 hover:text-emerald-300", paid: "bg-emerald-100 text-emerald-700" },
-  Gaz:  { header: "text-purple-600",  active: "text-purple-700 font-semibold",  inactive: "text-gray-200 hover:text-purple-300",  paid: "bg-purple-100 text-purple-700" },
+const PERSON_COLORS: Record<string, { header: string; active: string; activeCell: string; inactiveCell: string; paid: string }> = {
+  Phil: { header: "text-blue-600",    active: "font-semibold text-blue-700", activeCell: "bg-blue-50",    inactiveCell: "text-blue-300 hover:text-blue-500 hover:bg-blue-50",    paid: "bg-blue-100 text-blue-700" },
+  Matt: { header: "text-emerald-600", active: "font-semibold text-emerald-700", activeCell: "bg-emerald-50", inactiveCell: "text-emerald-300 hover:text-emerald-500 hover:bg-emerald-50", paid: "bg-emerald-100 text-emerald-700" },
+  Gaz:  { header: "text-purple-600",  active: "font-semibold text-purple-700",  activeCell: "bg-purple-50",  inactiveCell: "text-purple-300 hover:text-purple-500 hover:bg-purple-50",  paid: "bg-purple-100 text-purple-700" },
 };
-const defaultStyle = { header: "text-gray-600", active: "text-gray-700 font-semibold", inactive: "text-gray-200 hover:text-gray-400", paid: "bg-gray-100 text-gray-700" };
+const defaultStyle = { header: "text-gray-600", active: "font-semibold text-gray-700", activeCell: "bg-gray-50", inactiveCell: "text-gray-300 hover:text-gray-500 hover:bg-gray-50", paid: "bg-gray-100 text-gray-700" };
 
 type SortField = "date" | "amount";
 type SortDir   = "asc" | "desc";
@@ -194,12 +194,12 @@ export default function Home() {
                             return (
                               <td
                                 key={name}
-                                className="px-4 py-3 text-right whitespace-nowrap cursor-pointer select-none"
+                                className={`px-4 py-3 text-right whitespace-nowrap cursor-pointer select-none transition-colors ${inSplit ? style.activeCell : ""}`}
                                 onClick={() => togglePerson(expense, name)}
-                                title={inSplit ? `Remove ${name} from split` : `Add ${name} to split`}
+                                title={inSplit ? `Click to remove ${name}` : `Click to add ${name}`}
                               >
-                                <span className={inSplit ? style.active : style.inactive}>
-                                  {inSplit ? `$${share.toFixed(2)}` : "—"}
+                                <span className={inSplit ? style.active : style.inactiveCell}>
+                                  {inSplit ? `$${share.toFixed(2)}` : `+ $${(expense.amount / (expense.split.length + 1)).toFixed(2)}`}
                                 </span>
                               </td>
                             );
