@@ -40,50 +40,52 @@ export default function AddExpenseModal({ participants, onAdd, onClose }: Props)
     Matt: "bg-emerald-500 border-emerald-500 text-white",
     Gaz:  "bg-purple-500 border-purple-500 text-white",
   };
-  const inactive = "bg-white border-gray-300 text-gray-500 hover:border-gray-400";
+  const inactive = "bg-white border-gray-400 text-gray-700 hover:border-gray-600";
+
+  const canSubmit = description.trim() && amount && !saving;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
         <div className="p-5 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-lg">Add Expense</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <h2 className="text-lg font-bold text-gray-900">Add Expense</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">×</button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">What was it?</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-1.5">What was it?</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Dinner at Pike Place"
               autoFocus
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Amount ($)</label>
             <input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
               step="0.01"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Who paid?</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Who paid?</label>
             <div className="flex gap-2">
               {participants.map((name) => (
                 <button
                   key={name}
                   onClick={() => setPaidBy(name)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                    paidBy === name ? (COLORS[name] ?? "bg-gray-500 border-gray-500 text-white") : inactive
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors ${
+                    paidBy === name ? (COLORS[name] ?? "bg-gray-600 border-gray-600 text-white") : inactive
                   }`}
                 >
                   {name}
@@ -93,14 +95,14 @@ export default function AddExpenseModal({ participants, onAdd, onClose }: Props)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Split between</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Split between</label>
             <div className="flex gap-2">
               {participants.map((name) => (
                 <button
                   key={name}
                   onClick={() => toggleSplit(name)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                    split.includes(name) ? (COLORS[name] ?? "bg-gray-500 border-gray-500 text-white") : inactive
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors ${
+                    split.includes(name) ? (COLORS[name] ?? "bg-gray-600 border-gray-600 text-white") : inactive
                   }`}
                 >
                   {name}
@@ -111,15 +113,15 @@ export default function AddExpenseModal({ participants, onAdd, onClose }: Props)
         </div>
 
         <div className="p-5 pt-0 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2 rounded-lg border text-sm font-medium text-gray-600 hover:bg-gray-50">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border-2 border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            disabled={saving || !description || !amount}
-            className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+            disabled={!canSubmit}
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {saving ? "Saving..." : !description ? "Enter a description" : !amount ? "Enter an amount" : "Add"}
+            {saving ? "Saving..." : "Add"}
           </button>
         </div>
       </div>

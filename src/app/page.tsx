@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import { Expense, ExpenseData } from "@/lib/types";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import ParticipantsEditor from "@/components/ParticipantsEditor";
@@ -15,6 +14,37 @@ const defaultStyle = { header: "text-gray-600", active: "font-semibold text-gray
 
 type SortField = "date" | "amount";
 type SortDir   = "asc" | "desc";
+
+function calcSettlements(participants: string[], expenses: Expense[]) {
+  const paid: Record<string, number> = {};
+  const owes: Record<string, number> = {};
+  for (const p of participants) { paid[p] = 0; owes[p] = 0; }
+  for (const e of expenses) {
+    const payer = e.paidBy ?? participants[0];
+    if (paid[payer] !== undefined) paid[payer] += e.amount;
+    const share = e.amount / e.split.length;
+    for (const name of e.split) {
+      if (owes[name] !== undefined) owes[name] += share;
+    }
+  }
+  const balance: Record<string, number> = {};
+  for (const p of participants) balance[p] = paid[p] - owes[p];
+
+  const settlements: { from: string; to: string; amount: number }[] = [];
+  const bal = { ...balance };
+  const debtors   = [...participants].filter((p) => bal[p] < -0.01).sort((a, b) => bal[a] - bal[b]);
+  const creditors = [...participants].filter((p) => bal[p] > 0.01).sort((a, b) => bal[b] - bal[a]);
+  let di = 0, ci = 0;
+  while (di < debtors.length && ci < creditors.length) {
+    const amount = Math.min(-bal[debtors[di]], bal[creditors[ci]]);
+    if (amount > 0.01) settlements.push({ from: debtors[di], to: creditors[ci], amount: Math.round(amount * 100) / 100 });
+    bal[debtors[di]] += amount;
+    bal[creditors[ci]] -= amount;
+    if (Math.abs(bal[debtors[di]]) < 0.01) di++;
+    if (Math.abs(bal[creditors[ci]]) < 0.01) ci++;
+  }
+  return settlements;
+}
 
 export default function Home() {
   const [data, setData] = useState<ExpenseData | null>(null);
@@ -46,20 +76,12 @@ export default function Home() {
 
   const cyclePaidBy = (expense: Expense, participants: string[]) => {
     const idx = participants.indexOf(expense.paidBy ?? participants[0]);
-    const next = participants[(idx + 1) % participants.length];
-    patchExpense(expense.id, { paidBy: next });
+    patchExpense(expense.id, { paidBy: participants[(idx + 1) % participants.length] });
   };
 
   const patchExpense = async (id: string, patch: Partial<Expense>) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      return { ...prev, expenses: prev.expenses.map((e) => e.id === id ? { ...e, ...patch } : e) };
-    });
-    await fetch(`/api/expenses/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
+    setData((prev) => prev ? { ...prev, expenses: prev.expenses.map((e) => e.id === id ? { ...e, ...patch } : e) } : prev);
+    await fetch(`/api/expenses/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
     setTimeout(load, 1200);
   };
 
@@ -101,26 +123,38 @@ export default function Home() {
   if (!data) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>;
 
   const participants = data.participants;
+  const settlements = calcSettlements(participants, data.expenses);
 
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 py-6">
+
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Seattle Trip 🏔️⛅☀️</h1>
             <p className="text-sm text-gray-500">May–Jun 2026</p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/summary" className="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700">
-              Who owes what →
-            </Link>
-            <button onClick={() => setShowModal(true)} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-              + Add
-            </button>
-          </div>
+          <button onClick={() => setShowModal(true)} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+            + Add
+          </button>
         </div>
 
+        {/* Settle-up strip */}
+        {data.expenses.length > 0 && (
+          <div className="mb-5 flex flex-wrap gap-3">
+            {settlements.length === 0 ? (
+              <div className="bg-white border rounded-xl px-5 py-3 text-sm font-medium text-gray-500">Everyone&apos;s square 🎉</div>
+            ) : settlements.map((s, i) => (
+              <div key={i} className="bg-white border rounded-xl px-5 py-3">
+                <span className="text-sm text-gray-500">{s.from} owes {s.to} </span>
+                <span className="text-lg font-bold text-gray-900">${s.amount.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Participants */}
         <div className="mb-5">
           <ParticipantsEditor
             participants={participants}
@@ -205,8 +239,7 @@ export default function Home() {
                                     checked={inSplit}
                                     onChange={() => togglePerson(expense, name)}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="w-4 h-4 cursor-pointer accent-current"
-                                    style={{ accentColor: inSplit ? undefined : "#d1d5db" }}
+                                    className="w-4 h-4 cursor-pointer"
                                   />
                                   {inSplit && (
                                     <span className={`text-xs ${style.active}`}>${share.toFixed(2)}</span>
