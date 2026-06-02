@@ -6,11 +6,33 @@ import { Expense, ExpenseData } from "@/lib/types";
 import SplitPicker from "@/components/SplitPicker";
 import AddExpenseModal from "@/components/AddExpenseModal";
 
+const CATEGORIES = ["Food & Drink", "Transport", "Shopping", "Activities", "Groceries"];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  "Food & Drink": "bg-orange-100 text-orange-700",
+  "Transport":    "bg-sky-100 text-sky-700",
+  "Shopping":     "bg-pink-100 text-pink-700",
+  "Activities":   "bg-violet-100 text-violet-700",
+  "Groceries":    "bg-green-100 text-green-700",
+};
+
+const PERSON_COLORS: Record<string, string> = {
+  Phil: "bg-blue-100 text-blue-700",
+  Matt: "bg-emerald-100 text-emerald-700",
+  Gaz:  "bg-purple-100 text-purple-700",
+};
+
+type SortField = "date" | "amount";
+type SortDir   = "asc" | "desc";
+
 export default function Home() {
   const [data, setData] = useState<ExpenseData | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/expenses", { cache: "no-store" });
@@ -18,6 +40,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   const updateSplit = async (id: string, split: string[]) => {
     setData((prev) => {
@@ -50,18 +81,29 @@ export default function Home() {
     setSeeding(false);
   };
 
-  const filtered = data?.expenses.filter((e) =>
-    e.description.toLowerCase().includes(search.toLowerCase()) ||
-    e.date.toLowerCase().includes(search.toLowerCase())
-  ) ?? [];
+  const sortIcon = (field: SortField) => {
+    if (sortField !== field) return <span className="text-gray-300 ml-1">↕</span>;
+    return <span className="text-blue-500 ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  };
+
+  const filtered = (data?.expenses ?? [])
+    .filter((e) => {
+      const matchSearch =
+        e.description.toLowerCase().includes(search.toLowerCase()) ||
+        e.date.toLowerCase().includes(search.toLowerCase());
+      const matchCat = categoryFilter === "All" || e.category === categoryFilter;
+      return matchSearch && matchCat;
+    })
+    .sort((a, b) => {
+      if (sortField === "amount") {
+        return sortDir === "asc" ? a.amount - b.amount : b.amount - a.amount;
+      }
+      const da = new Date(a.date).getTime();
+      const db = new Date(b.date).getTime();
+      return sortDir === "asc" ? da - db : db - da;
+    });
 
   const total = filtered.reduce((sum, e) => sum + e.amount, 0);
-
-  const colors: Record<string, string> = {
-    Phil: "bg-blue-100 text-blue-700",
-    Matt: "bg-emerald-100 text-emerald-700",
-    Gaz: "bg-purple-100 text-purple-700",
-  };
 
   if (!data) {
     return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>;
@@ -69,7 +111,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Seattle Trip 🌧️</h1>
@@ -103,46 +146,83 @@ export default function Home() {
 
         {data.expenses.length > 0 && (
           <>
-            <div className="mb-4 flex gap-3 items-center">
+            {/* Search + category filters */}
+            <div className="mb-3 flex gap-3 items-center">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search expenses..."
+                placeholder="Search..."
                 className="flex-1 border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-500 whitespace-nowrap">{filtered.length} items · ${total.toFixed(2)}</span>
+              <span className="text-sm text-gray-500 whitespace-nowrap">{filtered.length} · ${total.toFixed(2)}</span>
             </div>
 
+            <div className="mb-4 flex flex-wrap gap-2">
+              {["All", ...CATEGORIES].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    categoryFilter === cat
+                      ? cat === "All"
+                        ? "bg-gray-800 text-white border-gray-800"
+                        : `${CATEGORY_COLORS[cat]} border-transparent`
+                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Table */}
             <div className="bg-white rounded-xl border overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600 w-28">Date</th>
+                      <th
+                        className="text-left px-4 py-3 font-medium text-gray-600 w-28 cursor-pointer select-none hover:text-gray-900"
+                        onClick={() => toggleSort("date")}
+                      >
+                        Date{sortIcon("date")}
+                      </th>
                       <th className="text-left px-4 py-3 font-medium text-gray-600">Description</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 w-24">Total</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Split between</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 w-24">Each</th>
+                      <th
+                        className="text-right px-4 py-3 font-medium text-gray-600 w-24 cursor-pointer select-none hover:text-gray-900"
+                        onClick={() => toggleSort("amount")}
+                      >
+                        Amount{sortIcon("amount")}
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Split</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-600 w-32">Each</th>
                       <th className="px-4 py-3 w-8"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filtered.map((expense) => (
-                      <tr key={expense.id} className="hover:bg-gray-50 group">
-                        <td className="px-4 py-3 text-gray-500 text-xs">{expense.date}</td>
+                      <tr key={expense.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{expense.date}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900">{expense.description}</span>
-                            {expense.receiptUrl && (
-                              <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
-                                📷
-                              </a>
-                            )}
-                            {expense.notes && <span className="text-xs text-gray-400">{expense.notes}</span>}
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-900">{expense.description}</span>
+                              {expense.receiptUrl && (
+                                <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 text-xs">📷</a>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {expense.category && (
+                                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${CATEGORY_COLORS[expense.category] ?? "bg-gray-100 text-gray-600"}`}>
+                                  {expense.category}
+                                </span>
+                              )}
+                              {expense.notes && <span className="text-xs text-gray-400">{expense.notes}</span>}
+                            </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-medium text-gray-900">${expense.amount.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-900 whitespace-nowrap">${expense.amount.toFixed(2)}</td>
                         <td className="px-4 py-3">
                           <SplitPicker
                             participants={data.participants}
@@ -154,17 +234,18 @@ export default function Home() {
                           {expense.split.length > 1 && (
                             <div className="flex flex-wrap gap-1 justify-end">
                               {expense.split.map((name) => (
-                                <span key={name} className={`px-1.5 py-0.5 rounded text-xs font-medium ${colors[name] ?? "bg-gray-100 text-gray-700"}`}>
+                                <span key={name} className={`px-1.5 py-0.5 rounded text-xs font-medium ${PERSON_COLORS[name] ?? "bg-gray-100 text-gray-700"}`}>
                                   {name} ${(expense.amount / expense.split.length).toFixed(2)}
                                 </span>
                               ))}
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <button
                             onClick={() => deleteExpense(expense.id)}
-                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-opacity text-lg leading-none"
+                            title="Delete"
+                            className="text-gray-300 hover:text-red-500 transition-colors text-lg leading-none"
                           >
                             ×
                           </button>

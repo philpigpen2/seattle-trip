@@ -7,6 +7,7 @@ export interface Expense {
   receiptUrl: string | null;
   notes: string;
   addedBy?: string;
+  category?: string;
 }
 
 export interface ExpenseData {
