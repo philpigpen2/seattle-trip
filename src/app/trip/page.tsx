@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Expense, ExpenseData } from "@/lib/types";
 import AddExpenseModal from "@/components/AddExpenseModal";
@@ -158,6 +159,7 @@ export default function Home() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
+            <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 mb-1 block">← philiplaney.com</Link>
             <h1 className="text-2xl font-bold text-gray-900">Seattle Trip 🏔️⛅☀️</h1>
             <p className="text-sm text-gray-500">May–Jun 2026</p>
           </div>
