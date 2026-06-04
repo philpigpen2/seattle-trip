@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     description: body.description,
     amount: parseFloat(body.amount),
     split: body.split || ["Phil"],
+    paidBy: body.paidBy || body.split?.[0] || "Phil",
     receiptUrl: body.receiptUrl || null,
     notes: body.notes || "",
     addedBy: body.addedBy || "",

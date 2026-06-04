@@ -9,9 +9,22 @@ interface Props {
   onClose: () => void;
 }
 
+// Local YYYY-MM-DD (avoids UTC off-by-one from toISOString)
+function todayLocal() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+
+// "2026-06-04" -> "Jun 4, 2026", built from local parts so the day never shifts
+function formatDisplayDate(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function AddExpenseModal({ participants, onAdd, onClose }: Props) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(todayLocal());
   const [paidBy, setPaidBy] = useState(participants[0] ?? "");
   const [split, setSplit] = useState<string[]>(participants);
   const [saving, setSaving] = useState(false);
@@ -27,7 +40,7 @@ export default function AddExpenseModal({ participants, onAdd, onClose }: Props)
     const res = await fetch("/api/expenses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description, amount: parseFloat(amount), paidBy, split }),
+      body: JSON.stringify({ description, amount: parseFloat(amount), date: formatDisplayDate(date), paidBy, split }),
     });
     const expense = await res.json();
     onAdd(expense);
@@ -74,6 +87,16 @@ export default function AddExpenseModal({ participants, onAdd, onClose }: Props)
               placeholder="0.00"
               step="0.01"
               className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-blue-500 placeholder-gray-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
 
