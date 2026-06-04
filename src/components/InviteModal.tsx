@@ -15,6 +15,8 @@ export default function InviteModal({ onClose }: Props) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resentId, setResentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/users").then(r => r.json()).then(d => {
@@ -42,6 +44,24 @@ export default function InviteModal({ onClose }: Props) {
       setTimeout(() => setSent(false), 3000);
     }
     setSending(false);
+  };
+
+  const resendInvite = async (p: Pending) => {
+    setResendingId(p.id);
+    setError("");
+    const res = await fetch("/api/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: p.email, inviteRole: p.role }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Couldn't resend invite");
+    } else {
+      setResentId(p.id);
+      setTimeout(() => setResentId(null), 3000);
+    }
+    setResendingId(null);
   };
 
   const roleLabel = (r: string) => r === "admin" ? "Admin" : "Member";
@@ -90,7 +110,13 @@ export default function InviteModal({ onClose }: Props) {
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${roleBadge(p.role)}`}>
                         {roleLabel(p.role)}
                       </span>
-                      <span className="text-xs text-gray-300">pending</span>
+                      <button
+                        onClick={() => resendInvite(p)}
+                        disabled={resendingId === p.id}
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-40"
+                      >
+                        {resendingId === p.id ? "Resending…" : resentId === p.id ? "Resent ✓" : "Resend"}
+                      </button>
                     </div>
                   </div>
                 ))}
