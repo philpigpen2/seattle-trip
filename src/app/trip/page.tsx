@@ -50,6 +50,21 @@ function calcSettlements(participants: string[], expenses: Expense[]) {
   return settlements;
 }
 
+function calcTotals(participants: string[], expenses: Expense[]) {
+  const paid: Record<string, number> = {};
+  const share: Record<string, number> = {};
+  for (const p of participants) { paid[p] = 0; share[p] = 0; }
+  let total = 0;
+  for (const e of expenses) {
+    total += e.amount;
+    const payer = e.paidBy ?? participants[0];
+    if (paid[payer] !== undefined) paid[payer] += e.amount;
+    const per = e.amount / e.split.length;
+    for (const name of e.split) if (share[name] !== undefined) share[name] += per;
+  }
+  return { total, paid, share };
+}
+
 export default function Home() {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -151,6 +166,7 @@ export default function Home() {
 
   const participants = data.participants;
   const settlements = calcSettlements(participants, data.expenses);
+  const totals = calcTotals(participants, data.expenses);
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -188,6 +204,34 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* Totals */}
+        {data.expenses.length > 0 && (
+          <div className="mb-5 bg-white border rounded-xl p-5">
+            <div className="flex items-baseline justify-between mb-4 pb-4 border-b">
+              <span className="text-sm font-medium text-gray-500">Total spent</span>
+              <span className="text-2xl font-bold text-gray-900">${totals.total.toFixed(2)}</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {participants.map((name) => {
+                const style = PERSON_COLORS[name] ?? defaultStyle;
+                return (
+                  <div key={name} className="rounded-lg border p-3">
+                    <div className={`text-sm font-semibold mb-2 ${style.header}`}>{name}</div>
+                    <div className="flex items-baseline justify-between text-xs text-gray-500">
+                      <span>Paid</span>
+                      <span className="font-semibold text-gray-800 text-sm">${totals.paid[name].toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between text-xs text-gray-500 mt-1">
+                      <span>Share</span>
+                      <span className="font-semibold text-gray-800 text-sm">${totals.share[name].toFixed(2)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Settle-up strip */}
         {data.expenses.length > 0 && (
