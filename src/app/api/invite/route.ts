@@ -21,6 +21,27 @@ export async function POST(req: Request) {
   const { email, inviteRole } = await req.json();
   if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
+  // Resend support: revoke any existing pending invitation for this email first,
+  // otherwise Clerk rejects the new one as a duplicate and stale invites get stuck.
+  const existingRes = await fetch(
+    `https://api.clerk.com/v1/invitations?status=pending&limit=100`,
+    { headers: clerkHeaders },
+  );
+  if (existingRes.ok) {
+    const existing = (await existingRes.json()) as { id: string; email_address: string }[];
+    const stale = existing.filter(
+      (i) => i.email_address.toLowerCase() === String(email).toLowerCase(),
+    );
+    await Promise.all(
+      stale.map((i) =>
+        fetch(`https://api.clerk.com/v1/invitations/${i.id}/revoke`, {
+          method: "POST",
+          headers: clerkHeaders,
+        }),
+      ),
+    );
+  }
+
   const res = await fetch("https://api.clerk.com/v1/invitations", {
     method: "POST",
     headers: clerkHeaders,
