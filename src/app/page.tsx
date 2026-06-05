@@ -13,11 +13,22 @@ export default function Home() {
             className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
           >
             <div>
-              <div className="font-semibold text-gray-900">Seattle Trip 🏔️⛅☀️</div>
-              <div className="text-sm text-gray-500">Expense tracker · May–Jun 2026</div>
+              <div className="font-semibold text-gray-900">Trip Expenses Tracker</div>
+              <div className="text-sm text-gray-500">Seattle Trip · May–Jun 2026</div>
             </div>
             <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
           </Link>
+
+          <a
+            href="/IQ"
+            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
+          >
+            <div>
+              <div className="font-semibold text-gray-900">IQ UK Homes 🏡</div>
+              <div className="text-sm text-gray-500">London property portfolio</div>
+            </div>
+            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
+          </a>
         </div>
       </div>
     </main>
