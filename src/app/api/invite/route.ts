@@ -53,10 +53,12 @@ export async function POST(req: Request) {
     }),
   });
 
+  const data = await res.json();
   if (!res.ok) {
-    const err = await res.json();
-    return NextResponse.json({ error: err.errors?.[0]?.message ?? "Failed" }, { status: 400 });
+    return NextResponse.json({ error: data.errors?.[0]?.message ?? "Failed" }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  // Return the invite link so the admin can share it directly (text/WhatsApp),
+  // not just rely on Clerk's email which can land in spam or not arrive.
+  return NextResponse.json({ ok: true, url: data.url ?? null });
 }

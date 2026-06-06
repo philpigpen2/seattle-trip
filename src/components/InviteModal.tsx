@@ -17,6 +17,18 @@ export default function InviteModal({ onClose }: Props) {
   const [sent, setSent] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resentId, setResentId] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — link is still shown for manual copy */
+    }
+  };
 
   useEffect(() => {
     fetch("/api/users").then(r => r.json()).then(d => {
@@ -41,6 +53,7 @@ export default function InviteModal({ onClose }: Props) {
       setSent(true);
       setPending(p => [...p, { id: Date.now().toString(), email, role }]);
       setEmail("");
+      if (data.url) setInviteLink(data.url);
       setTimeout(() => setSent(false), 3000);
     }
     setSending(false);
@@ -59,6 +72,7 @@ export default function InviteModal({ onClose }: Props) {
       setError(data.error ?? "Couldn't resend invite");
     } else {
       setResentId(p.id);
+      if (data.url) setInviteLink(data.url);
       setTimeout(() => setResentId(null), 3000);
     }
     setResendingId(null);
@@ -120,6 +134,29 @@ export default function InviteModal({ onClose }: Props) {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Shareable invite link — send directly if email doesn't arrive */}
+          {inviteLink && (
+            <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-3">
+              <p className="text-xs font-semibold text-blue-800 mb-1.5">
+                Invite link ready — send it to them directly:
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={inviteLink}
+                  onFocus={e => e.currentTarget.select()}
+                  className="flex-1 min-w-0 border border-blue-200 rounded px-2 py-1.5 text-xs text-gray-700 bg-white"
+                />
+                <button
+                  onClick={copyLink}
+                  className="shrink-0 px-3 py-1.5 rounded bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700"
+                >
+                  {copied ? "Copied ✓" : "Copy"}
+                </button>
               </div>
             </div>
           )}
