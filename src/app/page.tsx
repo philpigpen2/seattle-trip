@@ -20,12 +20,12 @@ export default function Home() {
           </a>
 
           <a
-            href="https://books.philiplaney.com"
+            href="https://everbound.philiplaney.com"
             className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
           >
             <div>
-              <div className="font-semibold text-gray-900">Booksmith 📖</div>
-              <div className="text-sm text-gray-500">AI-made illustrated children&apos;s books</div>
+              <div className="font-semibold text-gray-900">Everbound 📖</div>
+              <div className="text-sm text-gray-500">Magical personalised storybooks</div>
             </div>
             <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
           </a>
