@@ -116,6 +116,8 @@ type IssueState = {
 type LiveStatus = {
   issues: IssueState[];
   observedAt: string;
+  indexedGates: number | null;
+  totalGates: number | null;
 };
 
 const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
@@ -123,15 +125,16 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
   if (!token) return null;
 
   try {
-    const response = await fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20", {
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token}`,
-        "User-Agent": "philiplaney-com-rollout-tracker",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-      cache: "no-store",
-    });
+    const headers = {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "User-Agent": "philiplaney-com-rollout-tracker",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
+    const [response, ledgerResponse] = await Promise.all([
+      fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20", { headers, cache: "no-store" }),
+      fetch("https://api.github.com/repos/Dryht/dryht/contents/production/evidence-ledger.json?ref=setup%2Flocal-readiness", { headers, cache: "no-store" }),
+    ]);
 
     if (!response.ok) return null;
 
@@ -145,7 +148,22 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       }));
 
     if (issues.length !== 7 || issues.some((issue) => Number.isNaN(new Date(issue.updatedAt).getTime()))) return null;
-    return { issues, observedAt: new Date().toISOString() };
+
+    let indexedGates: number | null = null;
+    let totalGates: number | null = null;
+    if (ledgerResponse.ok) {
+      const payload = (await ledgerResponse.json()) as { content?: unknown; encoding?: unknown };
+      if (payload.encoding === "base64" && typeof payload.content === "string") {
+        const ledger = JSON.parse(Buffer.from(payload.content, "base64").toString("utf8")) as { gates?: Record<string, { status?: unknown }> };
+        if (ledger.gates && typeof ledger.gates === "object") {
+          const gates = Object.values(ledger.gates);
+          totalGates = gates.length;
+          indexedGates = gates.filter((gate) => gate.status === "indexed").length;
+        }
+      }
+    }
+
+    return { issues, observedAt: new Date().toISOString(), indexedGates, totalGates };
   } catch {
     return null;
   }
@@ -206,6 +224,8 @@ export default async function DryhtRolloutPage() {
   const underwayCount = stages.filter((stage) => stage.state === "underway" || stage.state === "blocked").length;
   const notStartedCount = stages.filter((stage) => stage.state === "not-started").length;
   const sourceProgress = stages.length - notStartedCount;
+  const indexedGates = liveStatus?.indexedGates ?? 0;
+  const totalGates = liveStatus?.totalGates ?? 15;
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#11120f] text-[#f4f0e5] selection:bg-[#ffbd59] selection:text-[#11120f]">
@@ -253,7 +273,7 @@ export default async function DryhtRolloutPage() {
 
           <div className="mt-12 grid gap-6 sm:grid-cols-3">
             <Metric label="Release gates passed" value={`${completeCount} / ${stages.length}`} note="A stage counts only when its canonical issue closes" danger={completeCount < stages.length} />
-            <Metric label="Activation attestations" value="0 / 15" note="The independent evidence ledger remains empty" danger />
+            <Metric label="Gate evidence indexed" value={`${indexedGates} / ${totalGates}`} note="Index only; the independent reader must still verify every claim" danger={indexedGates < totalGates} />
             <Metric label="Source progress" value={`${sourceProgress} / ${stages.length}`} note={`${underwayCount} stages have real work underway; ${notStartedCount} have not started`} />
           </div>
 
