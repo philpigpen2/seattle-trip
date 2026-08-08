@@ -8,6 +8,17 @@ export default function Home() {
         <p className="text-gray-500 mb-12">Personal apps &amp; projects.</p>
 
         <div className="space-y-3">
+          <Link
+            href="/dryht"
+            className="flex items-center justify-between w-full bg-gray-900 hover:bg-gray-800 border border-gray-900 rounded-xl px-5 py-4 transition-colors group"
+          >
+            <div>
+              <div className="font-semibold text-white">Dryht rollout</div>
+              <div className="text-sm text-gray-400">Live release gates, current blockers &amp; every stage</div>
+            </div>
+            <span className="text-amber-300 group-hover:text-amber-200 text-lg">→</span>
+          </Link>
+
           <a
             href="https://flourish.philiplaney.com"
             className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
