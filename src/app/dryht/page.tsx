@@ -59,13 +59,13 @@ const STAGES: Stage[] = [
     title: "Cloud substrate",
     plainTitle: "A production-shaped but inactive cloud",
     detail: "Read back the final images, identities, network, data migrations, schedulers, secrets, and rollback path.",
-    evidence: "Preview ready; production substrate unproven",
+    evidence: "Cloud substrate unverified from this environment",
     state: "underway",
   },
   {
     number: 6,
     title: "Customer-zero proof",
-    plainTitle: "Phil and Andrew use it naturally",
+    plainTitle: "Phil and one design partner use it naturally",
     detail: "Complete natural app conversations with durable receipts, useful answers, monitoring, and no founder technical operation.",
     evidence: "No customer-zero evidence yet",
     state: "not-started",
@@ -110,7 +110,7 @@ const stateStyle: Record<StageState, { label: string; dot: string; badge: string
 type IssueState = {
   number: number;
   state: "open" | "closed";
-  updatedAt: string;
+  closedAt: string | null;
 };
 
 type LiveStatus = {
@@ -118,6 +118,7 @@ type LiveStatus = {
   observedAt: string;
   indexedGates: number | null;
   totalGates: number | null;
+  ledgerState: string | null;
 };
 
 const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
@@ -132,29 +133,31 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       "X-GitHub-Api-Version": "2022-11-28",
     };
     const [response, ledgerResponse] = await Promise.all([
-      fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20", { headers, cache: "no-store" }),
+      fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20&sort=created&direction=asc", { headers, cache: "no-store" }),
       fetch("https://api.github.com/repos/Dryht/dryht/contents/production/evidence-ledger.json?ref=setup%2Flocal-readiness", { headers, cache: "no-store" }),
     ]);
 
     if (!response.ok) return null;
 
-    const raw = (await response.json()) as Array<{ number?: unknown; state?: unknown; updated_at?: unknown }>;
+    const raw = (await response.json()) as Array<{ number?: unknown; state?: unknown; closed_at?: unknown }>;
     const issues = raw
       .filter((issue) => typeof issue.number === "number" && issue.number >= 5 && issue.number <= 11)
       .map((issue) => ({
         number: issue.number as number,
         state: issue.state === "closed" ? "closed" as const : "open" as const,
-        updatedAt: String(issue.updated_at),
+        closedAt: typeof issue.closed_at === "string" ? issue.closed_at : null,
       }));
 
-    if (issues.length !== 7 || issues.some((issue) => Number.isNaN(new Date(issue.updatedAt).getTime()))) return null;
+    if (issues.length !== 7 || issues.some((issue) => issue.state === "closed" && (!issue.closedAt || Number.isNaN(new Date(issue.closedAt).getTime())))) return null;
 
     let indexedGates: number | null = null;
     let totalGates: number | null = null;
+    let ledgerState: string | null = null;
     if (ledgerResponse.ok) {
       const payload = (await ledgerResponse.json()) as { content?: unknown; encoding?: unknown };
       if (payload.encoding === "base64" && typeof payload.content === "string") {
-        const ledger = JSON.parse(Buffer.from(payload.content, "base64").toString("utf8")) as { gates?: Record<string, { status?: unknown }> };
+        const ledger = JSON.parse(Buffer.from(payload.content, "base64").toString("utf8")) as { state?: unknown; gates?: Record<string, { status?: unknown }> };
+        ledgerState = typeof ledger.state === "string" ? ledger.state : null;
         if (ledger.gates && typeof ledger.gates === "object") {
           const gates = Object.values(ledger.gates);
           totalGates = gates.length;
@@ -163,11 +166,17 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       }
     }
 
-    return { issues, observedAt: new Date().toISOString(), indexedGates, totalGates };
+    return {
+      issues,
+      observedAt: response.headers.get("date") ?? new Date().toISOString(),
+      indexedGates,
+      totalGates,
+      ledgerState,
+    };
   } catch {
     return null;
   }
-}, ["dryht-rollout-issue-state-v1"], { revalidate: 300 });
+}, ["dryht-rollout-issue-state-v2"], { revalidate: 300 });
 
 function formatEst(date: Date | string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -217,15 +226,24 @@ export default async function DryhtRolloutPage() {
   const stages = STAGES.map((stage) => {
     const issue = issueStates.get(stage.number + 4);
     return issue?.state === "closed"
-      ? { ...stage, state: "complete" as const, evidence: `Exit issue closed · ${formatEst(issue.updatedAt)}` }
+      ? { ...stage, state: "complete" as const, evidence: `Exit issue closed · ${formatEst(issue.closedAt!)}` }
       : stage;
   });
   const completeCount = stages.filter((stage) => stage.state === "complete").length;
-  const underwayCount = stages.filter((stage) => stage.state === "underway" || stage.state === "blocked").length;
+  const underwayCount = stages.filter((stage) => stage.state === "underway").length;
+  const blockedCount = stages.filter((stage) => stage.state === "blocked").length;
   const notStartedCount = stages.filter((stage) => stage.state === "not-started").length;
-  const sourceProgress = stages.length - notStartedCount;
-  const indexedGates = liveStatus?.indexedGates ?? 0;
-  const totalGates = liveStatus?.totalGates ?? 15;
+  const indexedGates = liveStatus?.indexedGates;
+  const totalGates = liveStatus?.totalGates;
+  const evidenceValue = indexedGates !== null && indexedGates !== undefined && totalGates !== null && totalGates !== undefined
+    ? `${indexedGates} / ${totalGates}`
+    : "Unavailable";
+  const releaseReady = completeCount === stages.length
+    && typeof totalGates === "number"
+    && typeof indexedGates === "number"
+    && totalGates > 0
+    && indexedGates === totalGates
+    && liveStatus?.ledgerState === "ready";
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#11120f] text-[#f4f0e5] selection:bg-[#ffbd59] selection:text-[#11120f]">
@@ -244,9 +262,9 @@ export default async function DryhtRolloutPage() {
           <Link href="/" className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#aaa99f] transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ffbd59]">
             Phil Laney / projects
           </Link>
-          <div className="flex items-center gap-2 rounded-full border border-[#f16d63]/35 bg-[#f16d63]/10 px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#ffaaa3]">
-            <span className="size-1.5 rounded-full bg-[#f16d63]" aria-hidden="true" />
-            {completeCount === stages.length ? "Ready" : "Not ready"}
+          <div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] ${releaseReady ? "border-[#75c787]/40 bg-[#75c787]/10 text-[#a9e8b6]" : "border-[#f16d63]/35 bg-[#f16d63]/10 text-[#ffaaa3]"}`}>
+            <span className={`size-1.5 rounded-full ${releaseReady ? "bg-[#75c787]" : "bg-[#f16d63]"}`} aria-hidden="true" />
+            {releaseReady ? "Ready" : "Not ready"}
           </div>
         </div>
       </header>
@@ -273,8 +291,8 @@ export default async function DryhtRolloutPage() {
 
           <div className="mt-12 grid gap-6 sm:grid-cols-3">
             <Metric label="Release gates passed" value={`${completeCount} / ${stages.length}`} note="A stage counts only when its canonical issue closes" danger={completeCount < stages.length} />
-            <Metric label="Gate evidence indexed" value={`${indexedGates} / ${totalGates}`} note="Index only; the independent reader must still verify every claim" danger={indexedGates < totalGates} />
-            <Metric label="Source progress" value={`${sourceProgress} / ${stages.length}`} note={`${underwayCount} stages have real work underway; ${notStartedCount} have not started`} />
+            <Metric label="Gate evidence indexed" value={evidenceValue} note="Index only; the independent reader must still verify every claim" danger={!releaseReady} />
+            <Metric label="Source lanes active" value={`${underwayCount} underway`} note={`${blockedCount} blocked · ${notStartedCount} not started · no partial launch credit`} />
           </div>
 
           <div className="mt-8 grid grid-cols-7 gap-1" aria-label={`${completeCount} of ${stages.length} Dryht release gates passed`}>
@@ -293,7 +311,7 @@ export default async function DryhtRolloutPage() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffbd59]">Critical path</p>
                 <h2 id="dryht-stages-heading" className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">Every gate to customer one</h2>
               </div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#777970]">{completeCount} passed · {underwayCount} underway · {notStartedCount} not started</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#777970]">{completeCount} passed · {underwayCount} underway · {blockedCount} blocked · {notStartedCount} not started</p>
             </div>
             <ol>
               {stages.map((stage) => <StageCard key={stage.number} stage={stage} />)}
@@ -307,7 +325,7 @@ export default async function DryhtRolloutPage() {
               <ul className="mt-6 space-y-4 text-sm leading-6 text-[#4d4c46]">
                 <li className="border-l-2 border-[#4f8f63] pl-4">First-party app and runtime candidate assembled</li>
                 <li className="border-l-2 border-[#4f8f63] pl-4">Vercel preview ready</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Checksum-pinned migration sequence 0001–0011 defined</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Migration checksum and validation tooling checked in</li>
                 <li className="border-l-2 border-[#4f8f63] pl-4">Containment and evidence contracts checked in</li>
               </ul>
             </div>
@@ -342,9 +360,9 @@ export default async function DryhtRolloutPage() {
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">How to read this</p>
-            <p className="mt-4 text-sm leading-6 text-[#b8b7ad]">A gate passes only when independent production evidence satisfies its exit condition. Code volume and green source tests do not receive partial launch credit.</p>
+            <p className="mt-4 text-sm leading-6 text-[#b8b7ad]">A stage shows Passed when its canonical exit issue closes; those issues close only after independent production evidence satisfies the exit condition. Code volume and green source tests receive no partial launch credit.</p>
             <p className="mt-5 border-t border-white/10 pt-4 font-mono text-[9px] uppercase leading-5 tracking-[0.14em] text-[#777970]">
-              {liveStatus ? `Issue state refreshed ${formatEst(liveStatus.observedAt)}` : "Live issue refresh unavailable"}<br />
+              {liveStatus ? `Issue state checked within five minutes · ${formatEst(liveStatus.observedAt)}` : "Live issue refresh unavailable"}<br />
               Stage detail reconciled 08 Aug 2026 EST<br />
               Source: command sheet + machine evidence ledger
             </p>
