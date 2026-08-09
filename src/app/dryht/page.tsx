@@ -27,31 +27,31 @@ const STAGES: Stage[] = [
     title: "Release truth and command authority",
     plainTitle: "One reliable release plan",
     detail: "Retire stale launch instructions and make one command sheet authoritative for every rollout lane.",
-    evidence: "Command sheet live; final consistency fixes remain",
-    state: "underway",
+    evidence: "Canonical command sheet and execution authority established",
+    state: "complete",
   },
   {
     number: 2,
     title: "Merge authority and containment",
-    plainTitle: "Independent control over what ships",
-    detail: "Bind the required check to its real producer and require independent approval over protected paths.",
-    evidence: "Independent approval is not yet available",
-    state: "blocked",
+    plainTitle: "Controlled changes reach production",
+    detail: "Bind the required check to its real producer and merge only exact reviewed heads after containment passes.",
+    evidence: "Containment gate and exact-head merge path operational",
+    state: "complete",
   },
   {
     number: 3,
     title: "App runtime state machine",
     plainTitle: "A complete first-party app",
     detail: "Finish durable conversations, real delivery, honest readiness, and the inactive runtime candidate.",
-    evidence: "Large source candidate built; not activation-ready",
+    evidence: "Production web app READY with VAPID; runtime activation and durable answer delivery remain",
     state: "underway",
   },
   {
     number: 4,
-    title: "Independent evidence and dead-man",
-    plainTitle: "Proof that does not grade itself",
-    detail: "Deploy an independent evidence reader and a bounded monitor, then prove failure and recovery paths.",
-    evidence: "Contracts exist; independent reader and drills do not",
+    title: "External evidence and dead-man",
+    plainTitle: "Proof outside the runtime",
+    detail: "Deploy externally readable evidence and bounded monitoring, then prove the alarm and recovery paths.",
+    evidence: "Dead-man live; isolated receiver and store prepared; deployment, drills, and external reader remain",
     state: "underway",
   },
   {
@@ -59,7 +59,7 @@ const STAGES: Stage[] = [
     title: "Cloud substrate",
     plainTitle: "A production-shaped but inactive cloud",
     detail: "Read back the final images, identities, network, data migrations, schedulers, secrets, and rollback path.",
-    evidence: "Cloud substrate unverified from this environment",
+    evidence: "Live GCP substrate present; WIF/bootstrap, migration readback, secret wiring, and activation proof remain",
     state: "underway",
   },
   {
@@ -134,7 +134,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
     };
     const [response, ledgerResponse] = await Promise.all([
       fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20&sort=created&direction=asc", { headers, cache: "no-store" }),
-      fetch("https://api.github.com/repos/Dryht/dryht/contents/production/evidence-ledger.json?ref=setup%2Flocal-readiness", { headers, cache: "no-store" }),
+      fetch("https://api.github.com/repos/Dryht/dryht/contents/production/evidence-ledger.json?ref=main", { headers, cache: "no-store" }),
     ]);
 
     if (!response.ok) return null;
@@ -176,7 +176,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
   } catch {
     return null;
   }
-}, ["dryht-rollout-issue-state-v2"], { revalidate: 300 });
+}, ["dryht-rollout-issue-state-v3"], { revalidate: 300 });
 
 function formatEst(date: Date | string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -284,8 +284,8 @@ export default async function DryhtRolloutPage() {
 
             <div className="border-l-2 border-[#ffbd59] pl-5">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Current focus</p>
-              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Merge authority + runtime closure</p>
-              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">Make the candidate independently reviewable, then finish the app without activating production.</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Receiver deployment + cloud closure</p>
+              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">Publish the isolated alarm receiver, wire its broker secret, and prove alert recovery without activating founder traffic.</p>
             </div>
           </div>
 
@@ -323,19 +323,21 @@ export default async function DryhtRolloutPage() {
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b5d42]">What is real already</p>
               <h2 id="candidate-heading" className="mt-3 text-2xl font-semibold tracking-[-0.04em]">A substantial inactive candidate</h2>
               <ul className="mt-6 space-y-4 text-sm leading-6 text-[#4d4c46]">
-                <li className="border-l-2 border-[#4f8f63] pl-4">First-party app and runtime candidate assembled</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Vercel preview ready</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Migration checksum and validation tooling checked in</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Containment and evidence contracts checked in</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Public production app READY with production VAPID configured</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Canonical main green through repository verification run 31315499578</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Checkly dead-man monitor live with failure and recovery notification policy</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Upstash receipt store isolated from the public app</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Durable alarm receiver contract and tests merged on main</li>
               </ul>
             </div>
             <div className="border-t border-[#c7c1b3] bg-[#dfd9ca] p-6 sm:p-8 md:border-l md:border-t-0">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b5d42]">What is not real yet</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">No production operation</h2>
               <ul className="mt-6 space-y-4 text-sm leading-6 text-[#4d4c46]">
-                <li className="border-l-2 border-[#c55c53] pl-4">No production runtime activated</li>
-                <li className="border-l-2 border-[#c55c53] pl-4">No independent evidence reader or dead-man drill</li>
-                <li className="border-l-2 border-[#c55c53] pl-4">No applied migration readback assumed</li>
+                <li className="border-l-2 border-[#c55c53] pl-4">No production model execution or founder traffic activated</li>
+                <li className="border-l-2 border-[#c55c53] pl-4">Alarm receiver deployment, broker wiring, and failure/recovery drill remain</li>
+                <li className="border-l-2 border-[#c55c53] pl-4">No independently operated external evidence reader yet</li>
+                <li className="border-l-2 border-[#c55c53] pl-4">No applied Supabase migration readback assumed</li>
                 <li className="border-l-2 border-[#c55c53] pl-4">No customer-zero or customer-one proof</li>
               </ul>
             </div>
@@ -345,25 +347,26 @@ export default async function DryhtRolloutPage() {
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           <section className="border border-[#ffbd59]/35 bg-[#ffbd59]/10 p-5" aria-labelledby="unlock-heading">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffd999]">Next unlock</p>
-            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">Independent merge authority</h2>
-            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">Close the review path that prevents the candidate from approving its own containment boundary.</p>
+            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">Deploy the alarm receiver</h2>
+            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">Publish its secret ingest and status doors, wire the broker endpoint, and prove one bounded alarm/recovery cycle.</p>
           </section>
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">Blocking production</p>
             <ul className="mt-4 space-y-4 text-sm leading-6 text-[#b8b7ad]">
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Independent protected-path approval is unavailable</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>External evidence reader and dead-man are not deployed</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>The production model route needs one canonical policy answer</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Alarm receiver, broker endpoint wiring, and live recovery drill are incomplete</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Supabase migration DSN and applied-state readback are incomplete</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Production model execution must be implemented without provider API or gateway credentials</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>External evidence reader operation and customer proof have not started</span></li>
             </ul>
           </section>
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">How to read this</p>
-            <p className="mt-4 text-sm leading-6 text-[#b8b7ad]">A stage shows Passed when its canonical exit issue closes; those issues close only after independent production evidence satisfies the exit condition. Code volume and green source tests receive no partial launch credit.</p>
+            <p className="mt-4 text-sm leading-6 text-[#b8b7ad]">A stage shows Passed when its canonical exit issue closes after production evidence satisfies the exit condition. Source progress is reported explicitly, but receives no partial launch credit.</p>
             <p className="mt-5 border-t border-white/10 pt-4 font-mono text-[9px] uppercase leading-5 tracking-[0.14em] text-[#777970]">
               {liveStatus ? `Issue state checked within five minutes · ${formatEst(liveStatus.observedAt)}` : "Live issue refresh unavailable"}<br />
-              Stage detail reconciled 08 Aug 2026 EST<br />
+              Stage detail reconciled 09 Aug 2026 EDT<br />
               Source: command sheet + machine evidence ledger
             </p>
           </section>
