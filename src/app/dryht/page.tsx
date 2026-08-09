@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
+import { LiveRefresh } from "@/components/LiveRefresh";
 
 export const metadata: Metadata = {
   title: "Dryht Rollout | Phil Laney",
@@ -111,6 +112,9 @@ type IssueState = {
   number: number;
   state: "open" | "closed";
   closedAt: string | null;
+  updatedAt: string;
+  comments: number;
+  labels: string[];
 };
 
 type LiveStatus = {
@@ -139,16 +143,32 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
 
     if (!response.ok) return null;
 
-    const raw = (await response.json()) as Array<{ number?: unknown; state?: unknown; closed_at?: unknown }>;
+    const raw = (await response.json()) as Array<{
+      number?: unknown;
+      state?: unknown;
+      closed_at?: unknown;
+      updated_at?: unknown;
+      comments?: unknown;
+      labels?: Array<{ name?: unknown }>;
+    }>;
     const issues = raw
       .filter((issue) => typeof issue.number === "number" && issue.number >= 5 && issue.number <= 11)
       .map((issue) => ({
         number: issue.number as number,
         state: issue.state === "closed" ? "closed" as const : "open" as const,
         closedAt: typeof issue.closed_at === "string" ? issue.closed_at : null,
+        updatedAt: typeof issue.updated_at === "string" ? issue.updated_at : "",
+        comments: typeof issue.comments === "number" ? issue.comments : 0,
+        labels: Array.isArray(issue.labels)
+          ? issue.labels.flatMap((label) => typeof label.name === "string" ? [label.name] : [])
+          : [],
       }));
 
-    if (issues.length !== 7 || issues.some((issue) => issue.state === "closed" && (!issue.closedAt || Number.isNaN(new Date(issue.closedAt).getTime())))) return null;
+    if (
+      issues.length !== 7
+      || issues.some((issue) => Number.isNaN(new Date(issue.updatedAt).getTime()))
+      || issues.some((issue) => issue.state === "closed" && (!issue.closedAt || Number.isNaN(new Date(issue.closedAt).getTime())))
+    ) return null;
 
     let indexedGates: number | null = null;
     let totalGates: number | null = null;
@@ -176,7 +196,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
   } catch {
     return null;
   }
-}, ["dryht-rollout-issue-state-v3"], { revalidate: 300 });
+}, ["dryht-rollout-issue-state-v4"], { revalidate: 30 });
 
 function formatEst(date: Date | string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -225,9 +245,25 @@ export default async function DryhtRolloutPage() {
   const issueStates = new Map(liveStatus?.issues.map((issue) => [issue.number, issue]));
   const stages = STAGES.map((stage) => {
     const issue = issueStates.get(stage.number + 4);
-    return issue?.state === "closed"
-      ? { ...stage, state: "complete" as const, evidence: `Exit issue closed · ${formatEst(issue.closedAt!)}` }
-      : stage;
+    if (!issue) return stage;
+    if (issue.state === "closed") {
+      return { ...stage, state: "complete" as const, evidence: `Issue #${issue.number} closed · ${formatEst(issue.closedAt!)}` };
+    }
+
+    const normalizedLabels = issue.labels.map((label) => label.toLowerCase());
+    const blocked = normalizedLabels.includes("rollout:blocked");
+    const explicitlyUnderway = normalizedLabels.includes("rollout:underway");
+    const state: StageState = blocked ? "blocked" : explicitlyUnderway || issue.comments > 1 ? "underway" : "not-started";
+    const activity = issue.comments === 1 ? "1 issue update" : `${issue.comments} issue updates`;
+    return {
+      ...stage,
+      state,
+      evidence: blocked
+        ? `Issue #${issue.number} blocked · updated ${formatEst(issue.updatedAt)}`
+        : state === "underway"
+          ? `Issue #${issue.number} · ${activity} · updated ${formatEst(issue.updatedAt)}`
+          : `Issue #${issue.number} open · downstream · updated ${formatEst(issue.updatedAt)}`,
+    };
   });
   const completeCount = stages.filter((stage) => stage.state === "complete").length;
   const underwayCount = stages.filter((stage) => stage.state === "underway").length;
@@ -244,6 +280,15 @@ export default async function DryhtRolloutPage() {
     && totalGates > 0
     && indexedGates === totalGates
     && liveStatus?.ledgerState === "ready";
+  const activeStages = stages.filter((stage) => stage.state === "underway" || stage.state === "blocked");
+  const currentFocus = activeStages.toSorted((left, right) => {
+    const leftUpdated = issueStates.get(left.number + 4)?.updatedAt ?? "";
+    const rightUpdated = issueStates.get(right.number + 4)?.updatedAt ?? "";
+    return rightUpdated.localeCompare(leftUpdated);
+  })[0] ?? stages.find((stage) => stage.state !== "complete") ?? stages.at(-1)!;
+  const nextUnlock = stages.find((stage) => stage.state !== "complete") ?? stages.at(-1)!;
+  const passedStages = stages.filter((stage) => stage.state === "complete");
+  const openStages = stages.filter((stage) => stage.state !== "complete");
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#11120f] text-[#f4f0e5] selection:bg-[#ffbd59] selection:text-[#11120f]">
@@ -283,9 +328,9 @@ export default async function DryhtRolloutPage() {
             </div>
 
             <div className="border-l-2 border-[#ffbd59] pl-5">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Current focus</p>
-              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Broker drill + cloud closure</p>
-              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">Deploy the controller and monitor against the versioned receiver endpoint, then prove alert recovery without activating founder traffic.</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Latest active lane</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">{currentFocus.plainTitle}</p>
+              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{currentFocus.evidence}</p>
             </div>
           </div>
 
@@ -320,26 +365,27 @@ export default async function DryhtRolloutPage() {
 
           <section className="grid overflow-hidden border border-white/10 bg-[#ede9dc] text-[#171814] md:grid-cols-2" aria-labelledby="candidate-heading">
             <div className="p-6 sm:p-8">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b5d42]">What is real already</p>
-              <h2 id="candidate-heading" className="mt-3 text-2xl font-semibold tracking-[-0.04em]">A substantial inactive candidate</h2>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b5d42]">Passed exit gates</p>
+              <h2 id="candidate-heading" className="mt-3 text-2xl font-semibold tracking-[-0.04em]">Proved by closed canonical issues</h2>
               <ul className="mt-6 space-y-4 text-sm leading-6 text-[#4d4c46]">
-                <li className="border-l-2 border-[#4f8f63] pl-4">Public production app READY with production VAPID configured</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Canonical main green through repository verification run 31315499578</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Checkly dead-man monitor live with failure and recovery notification policy</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Upstash receipt store isolated from the public app</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Durable alarm receiver READY in its isolated Vercel project</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Receiver status monitoring scheduled and GCP endpoint secret versioned</li>
+                {passedStages.length ? passedStages.map((stage) => (
+                  <li key={stage.number} className="border-l-2 border-[#4f8f63] pl-4">
+                    <span className="font-semibold">{stage.plainTitle}</span><br />
+                    <span className="font-mono text-[10px] text-[#6b5d42]">{stage.evidence}</span>
+                  </li>
+                )) : <li className="border-l-2 border-[#c55c53] pl-4">No canonical exit gate is closed yet.</li>}
               </ul>
             </div>
             <div className="border-t border-[#c7c1b3] bg-[#dfd9ca] p-6 sm:p-8 md:border-l md:border-t-0">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b5d42]">What is not real yet</p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">No production operation</h2>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b5d42]">Open exit gates</p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">Still blocking rollout readiness</h2>
               <ul className="mt-6 space-y-4 text-sm leading-6 text-[#4d4c46]">
-                <li className="border-l-2 border-[#c55c53] pl-4">No production model execution or founder traffic activated</li>
-                <li className="border-l-2 border-[#c55c53] pl-4">Controller/broker deployment and failure/recovery drill remain</li>
-                <li className="border-l-2 border-[#c55c53] pl-4">No independently operated external evidence reader yet</li>
-                <li className="border-l-2 border-[#c55c53] pl-4">No applied Supabase migration readback assumed</li>
-                <li className="border-l-2 border-[#c55c53] pl-4">No customer-zero or customer-one proof</li>
+                {openStages.map((stage) => (
+                  <li key={stage.number} className="border-l-2 border-[#c55c53] pl-4">
+                    <span className="font-semibold">{stage.plainTitle}</span><br />
+                    <span className="font-mono text-[10px] text-[#6b5d42]">{stage.evidence}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </section>
@@ -348,28 +394,26 @@ export default async function DryhtRolloutPage() {
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           <section className="border border-[#ffbd59]/35 bg-[#ffbd59]/10 p-5" aria-labelledby="unlock-heading">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffd999]">Next unlock</p>
-            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">Run the broker alarm drill</h2>
-            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">Deploy the controller and monitor with the versioned endpoint, then prove one bounded alarm/recovery cycle and durable receipt.</p>
+            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">{nextUnlock.plainTitle}</h2>
+            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">{nextUnlock.detail}</p>
           </section>
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">Blocking production</p>
             <ul className="mt-4 space-y-4 text-sm leading-6 text-[#b8b7ad]">
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Controller/broker deployment and live alarm recovery evidence are incomplete</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Supabase migration DSN and applied-state readback are incomplete</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Production model execution must be implemented without provider API or gateway credentials</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>External evidence reader operation and customer proof have not started</span></li>
+              {openStages.slice(0, 4).map((stage) => (
+                <li key={stage.number} className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>{stage.plainTitle}</span></li>
+              ))}
             </ul>
           </section>
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">How to read this</p>
             <p className="mt-4 text-sm leading-6 text-[#b8b7ad]">A stage shows Passed when its canonical exit issue closes after production evidence satisfies the exit condition. Source progress is reported explicitly, but receives no partial launch credit.</p>
-            <p className="mt-5 border-t border-white/10 pt-4 font-mono text-[9px] uppercase leading-5 tracking-[0.14em] text-[#777970]">
-              {liveStatus ? `Issue state checked within five minutes · ${formatEst(liveStatus.observedAt)}` : "Live issue refresh unavailable"}<br />
-              Stage detail reconciled 09 Aug 2026 EDT<br />
-              Source: command sheet + machine evidence ledger
-            </p>
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <LiveRefresh observedAt={liveStatus ? formatEst(liveStatus.observedAt) : null} available={Boolean(liveStatus)} />
+            </div>
+            <p className="mt-4 font-mono text-[9px] uppercase leading-5 tracking-[0.14em] text-[#777970]">Source: canonical GitHub issues + machine evidence ledger</p>
           </section>
 
           <Link href="/" className="flex min-h-11 items-center justify-between border border-white/15 px-4 py-3 text-xs font-semibold text-[#d5d2c7] transition-colors hover:border-[#ffbd59]/60 hover:bg-[#ffbd59]/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ffbd59]">
