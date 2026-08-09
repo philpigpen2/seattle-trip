@@ -51,7 +51,7 @@ const STAGES: Stage[] = [
     title: "External evidence and dead-man",
     plainTitle: "Proof outside the runtime",
     detail: "Deploy externally readable evidence and bounded monitoring, then prove the alarm and recovery paths.",
-    evidence: "Dead-man live; isolated receiver and store prepared; deployment, drills, and external reader remain",
+    evidence: "Dead-man and isolated receiver live; broker drill, durable readback, and external reader remain",
     state: "underway",
   },
   {
@@ -284,8 +284,8 @@ export default async function DryhtRolloutPage() {
 
             <div className="border-l-2 border-[#ffbd59] pl-5">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Current focus</p>
-              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Receiver deployment + cloud closure</p>
-              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">Publish the isolated alarm receiver, wire its broker secret, and prove alert recovery without activating founder traffic.</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Broker drill + cloud closure</p>
+              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">Deploy the controller and monitor against the versioned receiver endpoint, then prove alert recovery without activating founder traffic.</p>
             </div>
           </div>
 
@@ -327,7 +327,8 @@ export default async function DryhtRolloutPage() {
                 <li className="border-l-2 border-[#4f8f63] pl-4">Canonical main green through repository verification run 31315499578</li>
                 <li className="border-l-2 border-[#4f8f63] pl-4">Checkly dead-man monitor live with failure and recovery notification policy</li>
                 <li className="border-l-2 border-[#4f8f63] pl-4">Upstash receipt store isolated from the public app</li>
-                <li className="border-l-2 border-[#4f8f63] pl-4">Durable alarm receiver contract and tests merged on main</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Durable alarm receiver READY in its isolated Vercel project</li>
+                <li className="border-l-2 border-[#4f8f63] pl-4">Receiver status monitoring scheduled and GCP endpoint secret versioned</li>
               </ul>
             </div>
             <div className="border-t border-[#c7c1b3] bg-[#dfd9ca] p-6 sm:p-8 md:border-l md:border-t-0">
@@ -335,7 +336,7 @@ export default async function DryhtRolloutPage() {
               <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">No production operation</h2>
               <ul className="mt-6 space-y-4 text-sm leading-6 text-[#4d4c46]">
                 <li className="border-l-2 border-[#c55c53] pl-4">No production model execution or founder traffic activated</li>
-                <li className="border-l-2 border-[#c55c53] pl-4">Alarm receiver deployment, broker wiring, and failure/recovery drill remain</li>
+                <li className="border-l-2 border-[#c55c53] pl-4">Controller/broker deployment and failure/recovery drill remain</li>
                 <li className="border-l-2 border-[#c55c53] pl-4">No independently operated external evidence reader yet</li>
                 <li className="border-l-2 border-[#c55c53] pl-4">No applied Supabase migration readback assumed</li>
                 <li className="border-l-2 border-[#c55c53] pl-4">No customer-zero or customer-one proof</li>
@@ -347,14 +348,14 @@ export default async function DryhtRolloutPage() {
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           <section className="border border-[#ffbd59]/35 bg-[#ffbd59]/10 p-5" aria-labelledby="unlock-heading">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffd999]">Next unlock</p>
-            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">Deploy the alarm receiver</h2>
-            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">Publish its secret ingest and status doors, wire the broker endpoint, and prove one bounded alarm/recovery cycle.</p>
+            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">Run the broker alarm drill</h2>
+            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">Deploy the controller and monitor with the versioned endpoint, then prove one bounded alarm/recovery cycle and durable receipt.</p>
           </section>
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">Blocking production</p>
             <ul className="mt-4 space-y-4 text-sm leading-6 text-[#b8b7ad]">
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Alarm receiver, broker endpoint wiring, and live recovery drill are incomplete</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Controller/broker deployment and live alarm recovery evidence are incomplete</span></li>
               <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Supabase migration DSN and applied-state readback are incomplete</span></li>
               <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Production model execution must be implemented without provider API or gateway credentials</span></li>
               <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>External evidence reader operation and customer proof have not started</span></li>
