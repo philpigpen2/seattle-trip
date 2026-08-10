@@ -541,6 +541,12 @@ export default async function DryhtRolloutPage() {
             <p className="mt-4 font-mono text-[9px] uppercase leading-5 tracking-[0.14em] text-[#777970]">Source: canonical GitHub issues + machine evidence ledger</p>
           </section>
 
+          <section className="border border-white/10 bg-[#171814]/95 p-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">After launch</p>
+            <h2 className="mt-3 text-lg font-semibold tracking-[-0.03em] text-white">Converge on Node + TypeScript</h2>
+            <p className="mt-3 text-sm leading-6 text-[#b8b7ad]">New Dryht work prefers Node.js with TypeScript and Next.js for frontends where they fit. Existing launch-path code will migrate incrementally after launch with parity tests and rollback; this direction adds no launch gate.</p>
+          </section>
+
           <Link href="/" className="flex min-h-11 items-center justify-between border border-white/15 px-4 py-3 text-xs font-semibold text-[#d5d2c7] transition-colors hover:border-[#ffbd59]/60 hover:bg-[#ffbd59]/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ffbd59]">
             <span>Back to projects</span>
             <span aria-hidden="true">→</span>
