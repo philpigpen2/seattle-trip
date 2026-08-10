@@ -22,6 +22,58 @@ type Stage = {
   state: StageState;
 };
 
+type LaunchStep = {
+  number: string;
+  when: string;
+  title: string;
+  detail: string;
+};
+
+const LAUNCH_PATH: LaunchStep[] = [
+  {
+    number: "0",
+    when: "Now",
+    title: "Freeze one exact source candidate",
+    detail: "Correct PR #94 to the verified Claude identity, prove the exact head and protected preview, then merge through the accountable-owner path.",
+  },
+  {
+    number: "1",
+    when: "Next",
+    title: "Apply the database foundation once",
+    detail: "Run the verified-TLS preflight, apply migrations 0001–0017, and independently read back the ledger, roles, grants, RLS, isolation, and revocation behavior.",
+  },
+  {
+    number: "2",
+    when: "Then, in parallel",
+    title: "Build the three inactive operating lanes",
+    detail: "Prepare the owner Mac, materialize the Montréal cloud/Vercel candidate, and complete the independently operated evidence reader plus alarm/recovery drills. No traffic is activated.",
+  },
+  {
+    number: "3",
+    when: "Release gate",
+    title: "Close thirteen non-human-use gates",
+    detail: "Prove database boundaries, role attestations, notification, alarms, kill switch, rollback, laptop-off continuity, and crash reconciliation before founder use.",
+  },
+  {
+    number: "4",
+    when: "Evidence window",
+    title: "Phil and Andrew use the app naturally",
+    detail: "Open one bounded founder-alpha window only to earn the final two natural-use receipts. The candidate remains Not ready until both are independently read back.",
+  },
+  {
+    number: "5",
+    when: "Promotion",
+    title: "Promote only the proven candidate",
+    detail: "Pin the final value-free inventory and exact SHA, require the production verifier to return Ready, and keep rollback executable.",
+  },
+  {
+    number: "6",
+    when: "After founder alpha",
+    title: "Onboard external customer one",
+    detail: "Create the isolated second tenant, pass the rehearsal, and onboard the first external customer without founder-run technical delivery.",
+  },
+];
+
 const STAGES: Stage[] = [
   {
     number: 1,
@@ -60,13 +112,13 @@ const STAGES: Stage[] = [
     title: "Cloud substrate",
     plainTitle: "A production-shaped but inactive cloud",
     detail: "Read back the final images, identities, network, data migrations, schedulers, secrets, and rollback path.",
-    evidence: "Live GCP substrate present; WIF/bootstrap, migration readback, secret wiring, and activation proof remain",
+    evidence: "Dedicated GCP project exists; final inactive services, jobs, images, secrets, provider readback, and rollback proof remain",
     state: "underway",
   },
   {
     number: 6,
     title: "Customer-zero proof",
-    plainTitle: "Phil and one design partner use it naturally",
+    plainTitle: "Phil and Andrew use it naturally",
     detail: "Complete natural app conversations with durable receipts, useful answers, monitoring, and no founder technical operation.",
     evidence: "No customer-zero evidence yet",
     state: "not-started",
@@ -117,8 +169,17 @@ type IssueState = {
   labels: string[];
 };
 
+type SourceCandidate = {
+  number: number;
+  state: "open" | "closed";
+  mergedAt: string | null;
+  updatedAt: string;
+  headSha: string;
+};
+
 type LiveStatus = {
   issues: IssueState[];
+  sourceCandidate: SourceCandidate | null;
   observedAt: string;
   indexedGates: number | null;
   totalGates: number | null;
@@ -136,9 +197,10 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       "User-Agent": "philiplaney-com-rollout-tracker",
       "X-GitHub-Api-Version": "2022-11-28",
     };
-    const [response, ledgerResponse] = await Promise.all([
+    const [response, ledgerResponse, candidateResponse] = await Promise.all([
       fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20&sort=created&direction=asc", { headers, cache: "no-store" }),
       fetch("https://api.github.com/repos/Dryht/dryht/contents/production/evidence-ledger.json?ref=main", { headers, cache: "no-store" }),
+      fetch("https://api.github.com/repos/Dryht/dryht/pulls/94", { headers, cache: "no-store" }),
     ]);
 
     if (!response.ok) return null;
@@ -173,6 +235,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
     let indexedGates: number | null = null;
     let totalGates: number | null = null;
     let ledgerState: string | null = null;
+    let sourceCandidate: SourceCandidate | null = null;
     if (ledgerResponse.ok) {
       const payload = (await ledgerResponse.json()) as { content?: unknown; encoding?: unknown };
       if (payload.encoding === "base64" && typeof payload.content === "string") {
@@ -186,8 +249,37 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       }
     }
 
+    if (candidateResponse.ok) {
+      const candidate = (await candidateResponse.json()) as {
+        number?: unknown;
+        state?: unknown;
+        merged_at?: unknown;
+        updated_at?: unknown;
+        head?: { sha?: unknown };
+      };
+      const mergedAt = typeof candidate.merged_at === "string" ? candidate.merged_at : null;
+      const updatedAt = typeof candidate.updated_at === "string" ? candidate.updated_at : "";
+      const headSha = typeof candidate.head?.sha === "string" ? candidate.head.sha : "";
+      if (
+        candidate.number === 94
+        && (candidate.state === "open" || candidate.state === "closed")
+        && headSha.length === 40
+        && !Number.isNaN(new Date(updatedAt).getTime())
+        && (!mergedAt || !Number.isNaN(new Date(mergedAt).getTime()))
+      ) {
+        sourceCandidate = {
+          number: candidate.number,
+          state: candidate.state,
+          mergedAt,
+          updatedAt,
+          headSha,
+        };
+      }
+    }
+
     return {
       issues,
+      sourceCandidate,
       observedAt: response.headers.get("date") ?? new Date().toISOString(),
       indexedGates,
       totalGates,
@@ -196,7 +288,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
   } catch {
     return null;
   }
-}, ["dryht-rollout-issue-state-v4"], { revalidate: 30 });
+}, ["dryht-rollout-issue-state-v5"], { revalidate: 30 });
 
 function formatEst(date: Date | string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -240,8 +332,34 @@ function StageCard({ stage }: { stage: Stage }) {
   );
 }
 
+function LaunchStepCard({ step, status }: { step: LaunchStep; status?: string }) {
+  return (
+    <li className="grid gap-3 border-t border-white/10 py-5 first:border-t-0 md:grid-cols-[3rem_9rem_minmax(0,1fr)] md:items-start">
+      <span className="font-mono text-xs text-[#777970]">{step.number.padStart(2, "0")}</span>
+      <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#ffbd59]">{step.when}</p>
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-base font-semibold tracking-[-0.02em] text-[#f4f0e5]">{step.title}</h3>
+          {status ? <span className="rounded-full border border-[#ffbd59]/40 bg-[#ffbd59]/10 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#ffd999]">{status}</span> : null}
+        </div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#b8b7ad]">{step.detail}</p>
+      </div>
+    </li>
+  );
+}
+
 export default async function DryhtRolloutPage() {
   const liveStatus = await loadLiveStatus();
+  const sourceCandidate = liveStatus?.sourceCandidate;
+  const sourceCandidateMerged = Boolean(sourceCandidate?.mergedAt);
+  const sourceCandidateStatus = sourceCandidateMerged
+    ? `Merged ${formatEst(sourceCandidate!.mergedAt!)}`
+    : sourceCandidate?.state === "open"
+      ? `PR #${sourceCandidate.number} open at ${sourceCandidate.headSha.slice(0, 7)}`
+      : sourceCandidate?.state === "closed"
+        ? `PR #${sourceCandidate.number} closed without merge`
+        : "PR #94 status refresh unavailable";
+  const nextLaunchStep = sourceCandidateMerged ? LAUNCH_PATH[1] : LAUNCH_PATH[0];
   const issueStates = new Map(liveStatus?.issues.map((issue) => [issue.number, issue]));
   const stages = STAGES.map((stage) => {
     const issue = issueStates.get(stage.number + 4);
@@ -280,13 +398,6 @@ export default async function DryhtRolloutPage() {
     && totalGates > 0
     && indexedGates === totalGates
     && liveStatus?.ledgerState === "ready";
-  const activeStages = stages.filter((stage) => stage.state === "underway" || stage.state === "blocked");
-  const currentFocus = activeStages.toSorted((left, right) => {
-    const leftUpdated = issueStates.get(left.number + 4)?.updatedAt ?? "";
-    const rightUpdated = issueStates.get(right.number + 4)?.updatedAt ?? "";
-    return rightUpdated.localeCompare(leftUpdated);
-  })[0] ?? stages.find((stage) => stage.state !== "complete") ?? stages.at(-1)!;
-  const nextUnlock = stages.find((stage) => stage.state !== "complete") ?? stages.at(-1)!;
   const passedStages = stages.filter((stage) => stage.state === "complete");
   const openStages = stages.filter((stage) => stage.state !== "complete");
 
@@ -328,16 +439,16 @@ export default async function DryhtRolloutPage() {
             </div>
 
             <div className="border-l-2 border-[#ffbd59] pl-5">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Latest active lane</p>
-              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">{currentFocus.plainTitle}</p>
-              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{currentFocus.evidence}</p>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Immediate critical path</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">{LAUNCH_PATH[0].title}</p>
+              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{sourceCandidateStatus}. Database apply follows the exact merged source.</p>
             </div>
           </div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-3">
             <Metric label="Release gates passed" value={`${completeCount} / ${stages.length}`} note="A stage counts only when its canonical issue closes" danger={completeCount < stages.length} />
             <Metric label="Gate evidence indexed" value={evidenceValue} note="Index only; the independent reader must still verify every claim" danger={!releaseReady} />
-            <Metric label="Source lanes active" value={`${underwayCount} underway`} note={`${blockedCount} blocked · ${notStartedCount} not started · no partial launch credit`} />
+            <Metric label="Exit-gate lanes active" value={`${underwayCount} underway`} note={`${blockedCount} blocked · ${notStartedCount} not started · no partial launch credit`} />
           </div>
 
           <div className="mt-8 grid grid-cols-7 gap-1" aria-label={`${completeCount} of ${stages.length} Dryht release gates passed`}>
@@ -350,11 +461,24 @@ export default async function DryhtRolloutPage() {
 
       <div className="relative mx-auto grid max-w-7xl gap-8 px-5 pb-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:px-12 lg:pb-24">
         <div className="min-w-0 space-y-8">
+          <section className="border border-[#ffbd59]/30 bg-[#171814]/95 px-5 py-6 shadow-[0_30px_90px_rgba(0,0,0,.25)] sm:px-7" aria-labelledby="launch-path-heading">
+            <div className="border-b border-white/10 pb-6">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffbd59]">Fastest safe path</p>
+              <h2 id="launch-path-heading" className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">Source, database, three lanes, proof</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#aaa99f]">Founder alpha is a bounded evidence window, not an early Ready claim. It opens only after the other thirteen release gates pass.</p>
+            </div>
+            <ol>
+              {LAUNCH_PATH.map((step, index) => (
+                <LaunchStepCard key={step.number} step={step} status={index === 0 ? sourceCandidateStatus : undefined} />
+              ))}
+            </ol>
+          </section>
+
           <section className="border border-white/10 bg-[#171814]/95 px-5 py-6 shadow-[0_30px_90px_rgba(0,0,0,.25)] sm:px-7" aria-labelledby="dryht-stages-heading">
             <div className="flex flex-col gap-3 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffbd59]">Critical path</p>
-                <h2 id="dryht-stages-heading" className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">Every gate to customer one</h2>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffbd59]">Canonical exit gates</p>
+                <h2 id="dryht-stages-heading" className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">What must be true before customer one</h2>
               </div>
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#777970]">{completeCount} passed · {underwayCount} underway · {blockedCount} blocked · {notStartedCount} not started</p>
             </div>
@@ -394,22 +518,23 @@ export default async function DryhtRolloutPage() {
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           <section className="border border-[#ffbd59]/35 bg-[#ffbd59]/10 p-5" aria-labelledby="unlock-heading">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffd999]">Next unlock</p>
-            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">{nextUnlock.plainTitle}</h2>
-            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">{nextUnlock.detail}</p>
+            <h2 id="unlock-heading" className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">{nextLaunchStep.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-[#c8c5b9]">{nextLaunchStep.detail}</p>
           </section>
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">Blocking production</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">Immediate blockers</p>
             <ul className="mt-4 space-y-4 text-sm leading-6 text-[#b8b7ad]">
-              {openStages.slice(0, 4).map((stage) => (
-                <li key={stage.number} className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>{stage.plainTitle}</span></li>
-              ))}
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Exact PR #94 head, protected preview, and accountable-owner merge</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Verified-TLS migrations 0001–0017 and independent database readback</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Owner host, inactive cloud candidate, and independent reader/drills</span></li>
+              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Thirteen non-human gates before the founder-alpha evidence window</span></li>
             </ul>
           </section>
 
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">How to read this</p>
-            <p className="mt-4 text-sm leading-6 text-[#b8b7ad]">A stage shows Passed when its canonical exit issue closes after production evidence satisfies the exit condition. Source progress is reported explicitly, but receives no partial launch credit.</p>
+            <p className="mt-4 text-sm leading-6 text-[#b8b7ad]">The launch path shows dependency order. The exit-gate tracker shows proof: a stage passes only when its canonical issue closes after production evidence satisfies the exit condition. Source progress receives no partial launch credit.</p>
             <div className="mt-5 border-t border-white/10 pt-4">
               <LiveRefresh observedAt={liveStatus ? formatEst(liveStatus.observedAt) : null} available={Boolean(liveStatus)} />
             </div>
