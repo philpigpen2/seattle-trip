@@ -180,6 +180,7 @@ type SourceCandidate = {
 type LiveStatus = {
   issues: IssueState[];
   sourceCandidate: SourceCandidate | null;
+  databasePatch: SourceCandidate | null;
   observedAt: string;
   indexedGates: number | null;
   totalGates: number | null;
@@ -197,10 +198,11 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       "User-Agent": "philiplaney-com-rollout-tracker",
       "X-GitHub-Api-Version": "2022-11-28",
     };
-    const [response, ledgerResponse, candidateResponse] = await Promise.all([
+    const [response, ledgerResponse, candidateResponse, databasePatchResponse] = await Promise.all([
       fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20&sort=created&direction=asc", { headers, cache: "no-store" }),
       fetch("https://api.github.com/repos/Dryht/dryht/contents/production/evidence-ledger.json?ref=main", { headers, cache: "no-store" }),
       fetch("https://api.github.com/repos/Dryht/dryht/pulls/94", { headers, cache: "no-store" }),
+      fetch("https://api.github.com/repos/Dryht/dryht/pulls/96", { headers, cache: "no-store" }),
     ]);
 
     if (!response.ok) return null;
@@ -236,6 +238,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
     let totalGates: number | null = null;
     let ledgerState: string | null = null;
     let sourceCandidate: SourceCandidate | null = null;
+    let databasePatch: SourceCandidate | null = null;
     if (ledgerResponse.ok) {
       const payload = (await ledgerResponse.json()) as { content?: unknown; encoding?: unknown };
       if (payload.encoding === "base64" && typeof payload.content === "string") {
@@ -277,9 +280,38 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       }
     }
 
+    if (databasePatchResponse.ok) {
+      const patch = (await databasePatchResponse.json()) as {
+        number?: unknown;
+        state?: unknown;
+        merged_at?: unknown;
+        updated_at?: unknown;
+        head?: { sha?: unknown };
+      };
+      const mergedAt = typeof patch.merged_at === "string" ? patch.merged_at : null;
+      const updatedAt = typeof patch.updated_at === "string" ? patch.updated_at : "";
+      const headSha = typeof patch.head?.sha === "string" ? patch.head.sha : "";
+      if (
+        patch.number === 96
+        && (patch.state === "open" || patch.state === "closed")
+        && headSha.length === 40
+        && !Number.isNaN(new Date(updatedAt).getTime())
+        && (!mergedAt || !Number.isNaN(new Date(mergedAt).getTime()))
+      ) {
+        databasePatch = {
+          number: patch.number,
+          state: patch.state,
+          mergedAt,
+          updatedAt,
+          headSha,
+        };
+      }
+    }
+
     return {
       issues,
       sourceCandidate,
+      databasePatch,
       observedAt: response.headers.get("date") ?? new Date().toISOString(),
       indexedGates,
       totalGates,
@@ -288,7 +320,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
   } catch {
     return null;
   }
-}, ["dryht-rollout-issue-state-v5"], { revalidate: 30 });
+}, ["dryht-rollout-issue-state-v6"], { revalidate: 30 });
 
 function formatEst(date: Date | string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -359,6 +391,15 @@ export default async function DryhtRolloutPage() {
       : sourceCandidate?.state === "closed"
         ? `PR #${sourceCandidate.number} closed without merge`
         : "PR #94 status refresh unavailable";
+  const databasePatch = liveStatus?.databasePatch;
+  const databasePatchMerged = Boolean(databasePatch?.mergedAt);
+  const databasePatchStatus = databasePatchMerged
+    ? `PR #96 merged ${formatEst(databasePatch!.mergedAt!)}`
+    : databasePatch?.state === "open"
+      ? `PR #${databasePatch.number} awaits code-owner verdict at ${databasePatch.headSha.slice(0, 7)}`
+      : databasePatch?.state === "closed"
+        ? `PR #${databasePatch.number} closed without merge`
+        : "PR #96 status refresh unavailable";
   const nextLaunchStep = sourceCandidateMerged ? LAUNCH_PATH[1] : LAUNCH_PATH[0];
   const issueStates = new Map(liveStatus?.issues.map((issue) => [issue.number, issue]));
   const stages = STAGES.map((stage) => {
@@ -400,6 +441,9 @@ export default async function DryhtRolloutPage() {
     && liveStatus?.ledgerState === "ready";
   const immediateBlockers = [
     ...(sourceCandidateMerged ? [] : ["Exact PR #94 head, protected preview, and accountable-owner merge"]),
+    ...(databasePatchMerged ? [] : [databasePatch?.state === "open"
+      ? `Code-owner verdict and merge for PR #${databasePatch.number} at ${databasePatch.headSha.slice(0, 7)}`
+      : "Code-owner verdict and merge for the Supabase session-timeout patch"]),
     "Verified-TLS migrations 0001–0017 and independent database readback",
     "Owner host, inactive cloud candidate, and independent reader/drills",
     "Thirteen non-human gates before the founder-alpha evidence window",
@@ -447,7 +491,7 @@ export default async function DryhtRolloutPage() {
             <div className="border-l-2 border-[#ffbd59] pl-5">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Immediate critical path</p>
               <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">{nextLaunchStep.title}</p>
-              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{sourceCandidateStatus}. Database apply follows the exact merged source.</p>
+              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{databasePatchStatus}. Database apply follows its exact merged source.</p>
             </div>
           </div>
 
@@ -475,7 +519,7 @@ export default async function DryhtRolloutPage() {
             </div>
             <ol>
               {LAUNCH_PATH.map((step, index) => (
-                <LaunchStepCard key={step.number} step={step} status={index === 0 ? sourceCandidateStatus : undefined} />
+                <LaunchStepCard key={step.number} step={step} status={index === 0 ? sourceCandidateStatus : index === 1 ? databasePatchStatus : undefined} />
               ))}
             </ol>
           </section>
