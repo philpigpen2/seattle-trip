@@ -398,6 +398,12 @@ export default async function DryhtRolloutPage() {
     && totalGates > 0
     && indexedGates === totalGates
     && liveStatus?.ledgerState === "ready";
+  const immediateBlockers = [
+    ...(sourceCandidateMerged ? [] : ["Exact PR #94 head, protected preview, and accountable-owner merge"]),
+    "Verified-TLS migrations 0001–0017 and independent database readback",
+    "Owner host, inactive cloud candidate, and independent reader/drills",
+    "Thirteen non-human gates before the founder-alpha evidence window",
+  ];
   const passedStages = stages.filter((stage) => stage.state === "complete");
   const openStages = stages.filter((stage) => stage.state !== "complete");
 
@@ -440,7 +446,7 @@ export default async function DryhtRolloutPage() {
 
             <div className="border-l-2 border-[#ffbd59] pl-5">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Immediate critical path</p>
-              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">{LAUNCH_PATH[0].title}</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">{nextLaunchStep.title}</p>
               <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{sourceCandidateStatus}. Database apply follows the exact merged source.</p>
             </div>
           </div>
@@ -525,10 +531,9 @@ export default async function DryhtRolloutPage() {
           <section className="border border-white/10 bg-[#171814]/95 p-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#999a90]">Immediate blockers</p>
             <ul className="mt-4 space-y-4 text-sm leading-6 text-[#b8b7ad]">
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Exact PR #94 head, protected preview, and accountable-owner merge</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Verified-TLS migrations 0001–0017 and independent database readback</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Owner host, inactive cloud candidate, and independent reader/drills</span></li>
-              <li className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>Thirteen non-human gates before the founder-alpha evidence window</span></li>
+              {immediateBlockers.map((blocker) => (
+                <li key={blocker} className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#f16d63]" aria-hidden="true" /><span>{blocker}</span></li>
+              ))}
             </ul>
           </section>
 
