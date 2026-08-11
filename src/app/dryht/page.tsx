@@ -32,21 +32,21 @@ type LaunchStep = {
 const LAUNCH_PATH: LaunchStep[] = [
   {
     number: "0",
-    when: "Now",
+    when: "Complete",
     title: "Freeze one exact source candidate",
-    detail: "Correct PR #94 to the verified Claude identity, prove the exact head and protected preview, then merge through the accountable-owner path.",
+    detail: "Canonical main is pinned at 7e33cbd after the owner-host authority slice and CI dependency repairs merged through PRs #110–#112.",
   },
   {
     number: "1",
-    when: "Next",
+    when: "Complete",
     title: "Apply the database foundation once",
-    detail: "Run the verified-TLS preflight, apply migrations 0001–0017, and independently read back the ledger, roles, grants, RLS, isolation, and revocation behavior.",
+    detail: "Migration 0018 and its owner-host activation authority are applied. The exact ledger, customer-zero facts, four runtime logins, and numeric secret versions were independently read back.",
   },
   {
     number: "2",
-    when: "Then, in parallel",
+    when: "Now",
     title: "Build the three inactive operating lanes",
-    detail: "Prepare the owner Mac, materialize the Montréal cloud/Vercel candidate, and complete the independently operated evidence reader plus alarm/recovery drills. No traffic is activated.",
+    detail: "The Montréal v4 candidate is prepared with exact-main images, disabled Vercel identity, no schedulers, and a paused queue. Finish the dedicated owner Mac plus the independent reader and alarm/recovery drills. No traffic is activated.",
   },
   {
     number: "3",
@@ -96,7 +96,7 @@ const STAGES: Stage[] = [
     title: "App runtime state machine",
     plainTitle: "A complete first-party app",
     detail: "Finish durable conversations, real delivery, honest readiness, and the inactive runtime candidate.",
-    evidence: "Production web app READY with VAPID; runtime activation and durable answer delivery remain",
+    evidence: "Production web app READY with VAPID; inactive v4 is prepared; owner-host answer delivery and activation proof remain",
     state: "underway",
   },
   {
@@ -112,7 +112,7 @@ const STAGES: Stage[] = [
     title: "Cloud substrate",
     plainTitle: "A production-shaped but inactive cloud",
     detail: "Read back the final images, identities, network, data migrations, schedulers, secrets, and rollback path.",
-    evidence: "Dedicated GCP project exists; final inactive services, jobs, images, secrets, provider readback, and rollback proof remain",
+    evidence: "Exact-main images, migration 0018, runtime logins, five inactive workloads, disabled WIF, paused v4 queue, and zero schedulers read back; activation and rollback drills remain",
     state: "underway",
   },
   {
@@ -201,8 +201,8 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
     const [response, ledgerResponse, candidateResponse, databasePatchResponse] = await Promise.all([
       fetch("https://api.github.com/repos/Dryht/dryht/issues?state=all&per_page=20&sort=created&direction=asc", { headers, cache: "no-store" }),
       fetch("https://api.github.com/repos/Dryht/dryht/contents/production/evidence-ledger.json?ref=main", { headers, cache: "no-store" }),
-      fetch("https://api.github.com/repos/Dryht/dryht/pulls/94", { headers, cache: "no-store" }),
-      fetch("https://api.github.com/repos/Dryht/dryht/pulls/96", { headers, cache: "no-store" }),
+      fetch("https://api.github.com/repos/Dryht/dryht/pulls/112", { headers, cache: "no-store" }),
+      fetch("https://api.github.com/repos/Dryht/dryht/pulls/110", { headers, cache: "no-store" }),
     ]);
 
     if (!response.ok) return null;
@@ -264,7 +264,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       const updatedAt = typeof candidate.updated_at === "string" ? candidate.updated_at : "";
       const headSha = typeof candidate.head?.sha === "string" ? candidate.head.sha : "";
       if (
-        candidate.number === 94
+        candidate.number === 112
         && (candidate.state === "open" || candidate.state === "closed")
         && headSha.length === 40
         && !Number.isNaN(new Date(updatedAt).getTime())
@@ -292,7 +292,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
       const updatedAt = typeof patch.updated_at === "string" ? patch.updated_at : "";
       const headSha = typeof patch.head?.sha === "string" ? patch.head.sha : "";
       if (
-        patch.number === 96
+        patch.number === 110
         && (patch.state === "open" || patch.state === "closed")
         && headSha.length === 40
         && !Number.isNaN(new Date(updatedAt).getTime())
@@ -320,7 +320,7 @@ const loadLiveStatus = unstable_cache(async (): Promise<LiveStatus | null> => {
   } catch {
     return null;
   }
-}, ["dryht-rollout-issue-state-v6"], { revalidate: 30 });
+}, ["dryht-rollout-issue-state-v7"], { revalidate: 30 });
 
 function formatEst(date: Date | string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -390,17 +390,17 @@ export default async function DryhtRolloutPage() {
       ? `PR #${sourceCandidate.number} open at ${sourceCandidate.headSha.slice(0, 7)}`
       : sourceCandidate?.state === "closed"
         ? `PR #${sourceCandidate.number} closed without merge`
-        : "PR #94 status refresh unavailable";
+        : "PR #112 status refresh unavailable";
   const databasePatch = liveStatus?.databasePatch;
   const databasePatchMerged = Boolean(databasePatch?.mergedAt);
   const databasePatchStatus = databasePatchMerged
-    ? `PR #96 merged ${formatEst(databasePatch!.mergedAt!)}`
+    ? `Owner-host authority PR #110 merged ${formatEst(databasePatch!.mergedAt!)}`
     : databasePatch?.state === "open"
       ? `PR #${databasePatch.number} awaits code-owner verdict at ${databasePatch.headSha.slice(0, 7)}`
       : databasePatch?.state === "closed"
         ? `PR #${databasePatch.number} closed without merge`
-        : "PR #96 status refresh unavailable";
-  const nextLaunchStep = sourceCandidateMerged ? LAUNCH_PATH[1] : LAUNCH_PATH[0];
+        : "Owner-host authority PR #110 status refresh unavailable";
+  const nextLaunchStep = sourceCandidateMerged && databasePatchMerged ? LAUNCH_PATH[2] : sourceCandidateMerged ? LAUNCH_PATH[1] : LAUNCH_PATH[0];
   const issueStates = new Map(liveStatus?.issues.map((issue) => [issue.number, issue]));
   const stages = STAGES.map((stage) => {
     const issue = issueStates.get(stage.number + 4);
@@ -440,12 +440,12 @@ export default async function DryhtRolloutPage() {
     && indexedGates === totalGates
     && liveStatus?.ledgerState === "ready";
   const immediateBlockers = [
-    ...(sourceCandidateMerged ? [] : ["Exact PR #94 head, protected preview, and accountable-owner merge"]),
+    ...(sourceCandidateMerged ? [] : ["Exact PR #112 head, protected CI, and accountable-owner merge"]),
     ...(databasePatchMerged ? [] : [databasePatch?.state === "open"
       ? `Code-owner verdict and merge for PR #${databasePatch.number} at ${databasePatch.headSha.slice(0, 7)}`
-      : "Code-owner verdict and merge for the Supabase session-timeout patch"]),
-    "Verified-TLS migrations 0001–0017 and independent database readback",
-    "Owner host, inactive cloud candidate, and independent reader/drills",
+      : "Code-owner verdict and merge for the owner-host activation authority"]),
+    "Dedicated Mac executor install, isolated subscription identities, credential import, and restart rehearsal",
+    "Independent reader plus alarm, dead-man, laptop-off, rollback, and reconciliation drills",
     "Thirteen non-human gates before the founder-alpha evidence window",
   ];
   const passedStages = stages.filter((stage) => stage.state === "complete");
@@ -484,14 +484,14 @@ export default async function DryhtRolloutPage() {
                 Built is not live.
               </h1>
               <p className="mt-7 max-w-2xl text-base leading-7 text-[#b8b7ad] sm:text-lg">
-                The source candidate is materially advanced. The release is not. Dryht has passed {completeCount === 0 ? "none" : completeCount} of the seven production exit gates.
+                Exact source, migration 0018, and the inactive cloud candidate are prepared. The release is not yet active. Dryht has passed {completeCount === 0 ? "none" : completeCount} of the seven production exit gates.
               </p>
             </div>
 
             <div className="border-l-2 border-[#ffbd59] pl-5">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#ffbd59]">Immediate critical path</p>
               <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">{nextLaunchStep.title}</p>
-              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{databasePatchStatus}. Database apply follows its exact merged source.</p>
+              <p className="mt-3 text-sm leading-6 text-[#aaa99f]">{databasePatchStatus}. The cloud candidate is safely inactive while the dedicated Mac and proof drills finish.</p>
             </div>
           </div>
 
@@ -514,12 +514,12 @@ export default async function DryhtRolloutPage() {
           <section className="border border-[#ffbd59]/30 bg-[#171814]/95 px-5 py-6 shadow-[0_30px_90px_rgba(0,0,0,.25)] sm:px-7" aria-labelledby="launch-path-heading">
             <div className="border-b border-white/10 pb-6">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffbd59]">Fastest safe path</p>
-              <h2 id="launch-path-heading" className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">Source, database, three lanes, proof</h2>
+              <h2 id="launch-path-heading" className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">Source and database done; Mac and proof next</h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-[#aaa99f]">Founder alpha is a bounded evidence window, not an early Ready claim. It opens only after the other thirteen release gates pass.</p>
             </div>
             <ol>
               {LAUNCH_PATH.map((step, index) => (
-                <LaunchStepCard key={step.number} step={step} status={index === 0 ? sourceCandidateStatus : index === 1 ? databasePatchStatus : undefined} />
+                <LaunchStepCard key={step.number} step={step} status={index === 0 ? sourceCandidateStatus : index === 1 ? "Applied + read back" : index === 2 ? "Inactive v4 prepared" : undefined} />
               ))}
             </ol>
           </section>
