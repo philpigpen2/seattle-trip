@@ -31,6 +31,28 @@ export default function Home() {
           </a>
 
           <a
+            href="https://gragras.philiplaney.com"
+            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
+          >
+            <div>
+              <div className="font-semibold text-gray-900">Gragras 👾</div>
+              <div className="text-sm text-gray-500">Charlotte&apos;s alien-pet game &amp; evening stories</div>
+            </div>
+            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
+          </a>
+
+          <a
+            href="https://sinvitation.philiplaney.com"
+            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
+          >
+            <div>
+              <div className="font-semibold text-gray-900">Invitation ✉️</div>
+              <div className="text-sm text-gray-500">One Night, Three Children</div>
+            </div>
+            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
+          </a>
+
+          <a
             href="https://flourish.philiplaney.com"
             className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
           >
