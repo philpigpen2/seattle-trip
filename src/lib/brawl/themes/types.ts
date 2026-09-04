@@ -13,7 +13,7 @@ export type Theme = {
   game: string;
   stage: string;
   scroll: number;
-  style: "brawl" | "blade" | "stomp";
+  style: "brawl" | "blade" | "stomp" | "shoot";
   hitWords: string[];
   hudInk: string;
   hudShadow: string;

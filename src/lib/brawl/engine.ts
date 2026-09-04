@@ -90,7 +90,8 @@ export function mountBrawl(
   let themeIdx = 0;
   let theme = themes[0];
   let wipe = 0; // 0 = no transition, counts 1..WIPE_LEN during a game change
-  const WIPE_LEN = 74;
+  const WIPE_LEN = 60;
+  let incoming = "";
 
   let cam = 0;
   let t = 0;
@@ -261,7 +262,7 @@ export function mountBrawl(
         const hx = h.baseX;
         const hy = laneY(f, h.lane);
         if (h.cool === 0) {
-          const reach = theme.style === "blade" ? 40 : 30;
+          const reach = theme.style === "blade" ? 40 : theme.style === "shoot" ? 165 : 30;
           const target = foes.find(
             (foe) =>
               foe.state === "walk" &&
@@ -273,11 +274,15 @@ export function mountBrawl(
             h.state =
               theme.style === "blade"
                 ? "slash"
-                : theme.style === "stomp"
-                  ? "kick"
-                  : Math.random() > 0.62
-                    ? "kick"
-                    : "punch";
+                : theme.style === "shoot"
+                  ? "punch"
+                  : theme.style === "stomp"
+                    ? Math.random() > 0.35
+                      ? "kick"
+                      : "punch"
+                    : Math.random() > 0.62
+                      ? "kick"
+                      : "punch";
             h.timer = 0;
           }
         }
@@ -291,7 +296,8 @@ export function mountBrawl(
         if (h.timer === impactAt) {
           const hx = h.baseX;
           const hy = laneY(f, h.lane);
-          const reach = h.state === "slash" ? 44 : h.state === "kick" ? 34 : 30;
+          const reach =
+            theme.style === "shoot" ? 175 : h.state === "slash" ? 44 : h.state === "kick" ? 34 : 30;
           for (const foe of foes) {
             if (foe.state !== "walk" && foe.state !== "hurt") continue;
             if (Math.abs(foe.y - hy) > 11) continue;
@@ -435,6 +441,18 @@ export function mountBrawl(
         y,
         draw: () => {
           drawFighter(ctx, x, y, h.f, pose, fr, false);
+          if (theme.style === "shoot" && h.state === "punch" && h.timer >= 4 && h.timer <= 9) {
+            const mx = Math.round(x) + 22;
+            const my = y - 18;
+            ctx.fillStyle = "#fff3b0";
+            ctx.fillRect(mx, my - 1, 4, 3);
+            ctx.fillStyle = "#ffb03a";
+            ctx.fillRect(mx + 3, my, 3, 1);
+            ctx.fillRect(mx + 1, my - 2, 1, 1);
+            ctx.fillRect(mx + 1, my + 2, 1, 1);
+            ctx.fillStyle = "#fff3b0";
+            for (let bx = mx + 7; bx < f.W; bx += 7) ctx.fillRect(bx, my, 4, 1);
+          }
           if (h.state === "slash" && h.timer >= 12 && h.timer <= 18) {
             ctx.fillStyle = "#ffffff";
             for (let i = 0; i < 9; i++) {
@@ -559,11 +577,11 @@ export function mountBrawl(
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, f.W, h);
     ctx.fillRect(0, f.H - h, f.W, h);
-    if (p > 0.85) {
+    if (p > 0.7) {
       const y = Math.round(f.H / 2) - 12;
       drawText(ctx, "INSERT COIN", Math.round(f.W / 2), y, "#ffe9a8", { align: "center", scale: 1 });
-      drawText(ctx, "NEXT GAME", Math.round(f.W / 2), y + 12, "#8a83b8", { align: "center" });
-      drawText(ctx, theme.game, Math.round(f.W / 2), y + 22, "#4fd1ff", { align: "center" });
+      drawText(ctx, "NOW PLAYING", Math.round(f.W / 2), y + 12, "#8a83b8", { align: "center" });
+      drawText(ctx, incoming || theme.game, Math.round(f.W / 2), y + 22, "#4fd1ff", { align: "center" });
     }
   }
 
@@ -601,6 +619,7 @@ export function mountBrawl(
         if (wipe > WIPE_LEN) wipe = 0;
       } else if (t > rotateFrames) {
         wipe = 1;
+        incoming = themes[(themeIdx + 1) % themes.length].game;
         t = 0;
       }
     }

@@ -30,7 +30,7 @@ export type HairStyle =
   | "cap"
   | "skull";
 
-export type Weapon = "none" | "sword" | "axe" | "staff" | "club";
+export type Weapon = "none" | "sword" | "axe" | "staff" | "club" | "gun";
 
 export type Pose = "walk" | "punch" | "kick" | "slash" | "hurt" | "ko" | "idle" | "cheer";
 
@@ -268,6 +268,24 @@ function weapon(o: Rect[], f: Fighter, grip: Grip, dx = 0, dy = 0) {
     return;
   }
 
+  if (w === "gun") {
+    const gun = "#3a4250";
+    const gun2 = "#5d6878";
+    if (grip === "down" || grip === "mid") {
+      put(12, 11, 4, 4, "#6b4526");
+      put(15, 11, 7, 3, gun);
+      put(15, 11, 7, 1, gun2);
+      put(22, 12, 5, 1, gun);
+      put(16, 14, 2, 2, gun);
+    } else {
+      put(11, 15, 3, 4, "#6b4526");
+      put(12, 6, 2, 10, gun);
+      put(13, 6, 1, 10, gun2);
+      put(11, 12, 4, 2, gun);
+    }
+    return;
+  }
+
   if (w === "club") {
     if (grip === "raise") {
       put(10, -4, 2, 14, wood);
@@ -333,6 +351,7 @@ function buildRects(f: Fighter, pose: Pose, frame: number): Rect[] {
     o.push([15, 12, 3, 2, p.skin]);
     o.push([18, 10, 4, 4, p.skin]);
     o.push([18, 10, 4, 1, p.skinShade]);
+    if (f.weapon === "gun") weapon(o, f, "down", 6, 1);
     return o;
   }
 
