@@ -1,123 +1,39 @@
-import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { SignOutButton } from "@clerk/nextjs";
+import AppList from "@/components/AppList";
+import ArcadeStage from "@/components/ArcadeStage";
+import Landing from "@/components/Landing";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const { userId } = await auth();
+
+  // Signed out: the arcade attract screen is the whole site.
+  if (!userId) return <Landing />;
+
+  // Signed in: the apps.
   return (
-    <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
-      <div className="max-w-md w-full">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Phil Laney</h1>
-        <p className="text-gray-500 mb-12">Personal apps &amp; projects.</p>
-
-        <div className="space-y-3">
-          <Link
-            href="/dryht"
-            className="flex items-center justify-between w-full bg-gray-900 hover:bg-gray-800 border border-gray-900 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-white">Dryht rollout</div>
-              <div className="text-sm text-gray-400">Live release gates, current blockers &amp; every stage</div>
-            </div>
-            <span className="text-amber-300 group-hover:text-amber-200 text-lg">→</span>
-          </Link>
-
-          <a
-            href="https://howto.philiplaney.com"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">How To 🎲</div>
-              <div className="text-sm text-gray-500">Game explainer videos — plan, bets &amp; experiments</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
-
-          <a
-            href="https://gragras.philiplaney.com"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">Gragras 👾</div>
-              <div className="text-sm text-gray-500">Charlotte&apos;s alien-pet game &amp; evening stories</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
-
-          <a
-            href="https://sinvitation.philiplaney.com"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">Invitation ✉️</div>
-              <div className="text-sm text-gray-500">One Night, Three Children</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
-
-          <a
-            href="https://flourish.philiplaney.com"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">Flourish 🌱</div>
-              <div className="text-sm text-gray-500">Private health &amp; wellness — records, tracking &amp; AI</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
-
-          <a
-            href="https://invites.philiplaney.com"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">Party Invites 🎉</div>
-              <div className="text-sm text-gray-500">Magical party invites &amp; RSVPs</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
-
-          <a
-            href="https://everbound.philiplaney.com"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">Everbound 📖</div>
-              <div className="text-sm text-gray-500">Magical personalised storybooks</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
-
-          <a
-            href="https://cards.philiplaney.com"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">Card Coach 💳</div>
-              <div className="text-sm text-gray-500">Best card to use &amp; which to get next</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
-
-          <Link
-            href="/trip"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">Trip Expenses Tracker</div>
-              <div className="text-sm text-gray-500">Seattle Trip · May–Jun 2026</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </Link>
-
-          <a
-            href="/IQ"
-            className="flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 transition-colors group"
-          >
-            <div>
-              <div className="font-semibold text-gray-900">IQ UK Homes 🏡</div>
-              <div className="text-sm text-gray-500">London property portfolio</div>
-            </div>
-            <span className="text-gray-400 group-hover:text-gray-600 text-lg">→</span>
-          </a>
+    <main className="min-h-screen bg-white">
+      <div className="relative h-40 w-full overflow-hidden border-b border-gray-200 sm:h-52">
+        <ArcadeStage compact />
+        <div className="pointer-events-none absolute inset-0 flex items-end p-4 sm:p-6">
+          <h1 className="font-arcade text-[clamp(12px,3vw,22px)] text-[#ffe9a8] [text-shadow:2px_2px_0_#c0392b,4px_4px_0_#2a0f22]">
+            PHIL LANEY
+          </h1>
         </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-md px-6 py-10">
+        <div className="mb-8 flex items-baseline justify-between">
+          <p className="text-gray-500">Personal apps &amp; projects.</p>
+          <SignOutButton>
+            <button className="text-sm text-gray-400 underline underline-offset-4 hover:text-gray-700">
+              Sign out
+            </button>
+          </SignOutButton>
+        </div>
+        <AppList />
       </div>
     </main>
   );
