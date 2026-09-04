@@ -44,6 +44,8 @@ export type Fighter = {
   big?: boolean;
   moustache?: boolean;
   plume?: string;
+  /** Horned helmet — only the fantasy stage wants these. */
+  horns?: boolean;
   /** Turtle plastron and shell rim. */
   shell?: string;
   band?: string;
@@ -127,8 +129,10 @@ function head(o: Rect[], f: Fighter, dx: number, dy: number) {
       o.push([4 + dx, 0 + dy, 8, 1, p.shirt2]);
       o.push([4 + dx, 4 + dy, 2, 4, p.accent]);
       o.push([11 + dx, 4 + dy, 1, 3, p.accent]);
-      o.push([6 + dx, -3 + dy, 2, 3, p.hair]); // horn
-      o.push([10 + dx, -3 + dy, 2, 3, p.hair]);
+      if (f.horns) {
+        o.push([6 + dx, -3 + dy, 2, 3, p.hair]);
+        o.push([10 + dx, -3 + dy, 2, 3, p.hair]);
+      }
       break;
     case "cap":
       o.push([4 + dx, 0 + dy, 8, 3, p.hair2]);

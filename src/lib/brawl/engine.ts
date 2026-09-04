@@ -532,8 +532,11 @@ export function mountBrawl(
     );
 
     if (--spawnIn <= 0) {
-      spawnFoe(f);
-      if (Math.random() > 0.7) spawnFoe(f);
+      const live = foes.filter((x) => x.state === "walk" || x.state === "hurt").length;
+      if (live < 3) {
+        spawnFoe(f);
+        if (live < 2 && Math.random() > 0.7) spawnFoe(f);
+      }
       spawnIn = Math.round(rand(58, 128));
     }
 

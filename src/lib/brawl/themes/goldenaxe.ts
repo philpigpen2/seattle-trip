@@ -22,6 +22,7 @@ function ridge(f: Frame, parallax: number, amp: number, base: number, color: str
 
 export const goldenaxe: Theme = {
   id: "goldenaxe",
+  targetW: 320,
   intro: ["STAGE 1", "THE PATH"],
   scroll: 0.5,
   style: "blade",
@@ -111,7 +112,7 @@ export const goldenaxe: Theme = {
     },
     {
       // Charlotte — horned helm and an axe
-      hair: "helm", weapon: "axe",
+      hair: "helm", horns: true, weapon: "axe",
       pal: {
         skin: "#f6c9a4", skinShade: "#d09a75",
         hair: "#e8e0c8", hair2: "#b8b096",
@@ -141,7 +142,7 @@ export const goldenaxe: Theme = {
     {
       hp: 1, speed: 0.9, weight: 3,
       fighter: {
-        hair: "helm", weapon: "club",
+        hair: "helm", horns: true, weapon: "club",
         pal: {
           skin: "#c98a5e", skinShade: "#a06740",
           hair: "#8a2020", hair2: "#a83030",
@@ -237,10 +238,28 @@ export const goldenaxe: Theme = {
     // The dirt path.
     rect(f, 0, top + 2, f.W, f.H - top, "#8a6238");
     rect(f, 0, top + 2, f.W, 2, "#a4794a");
+    // The path darkens towards the front, and is worn into ruts and stones.
+    const depth = f.H - top;
+    for (let y = 0; y < depth; y++) {
+      if (y / depth > 0.6) {
+        f.ctx.fillStyle = y / depth > 0.85 ? "#5c4023" : "#75512c";
+        f.ctx.fillRect(0, top + 2 + y, f.W, 1);
+      }
+    }
     tile(f, 9, 1, 14, (x, i) => {
       const y = top + 6 + Math.round(hash(i, 84) * (f.groundBottom - top - 4));
       const c = hash(i, 85) > 0.5 ? "#75512c" : "#9c7042";
       rect(f, x, y, 3 + Math.round(hash(i, 86) * 3), 2, c);
+    });
+    // Set stones and wheel ruts.
+    tile(f, 17, 1, 20, (x, i) => {
+      const y = top + 8 + Math.round(hash(i, 116) * (f.groundBottom - top - 8));
+      if (hash(i, 117) > 0.55) {
+        rect(f, x, y, 6, 4, "#9c7042");
+        rect(f, x, y, 6, 1, "#b58a55");
+        rect(f, x, y + 3, 6, 1, "#6b4826");
+      }
+      if (hash(i, 118) > 0.7) rect(f, x + 4, y + 6, 9, 1, "#6b4826");
     });
     // Cobbles at the front edge.
     rect(f, 0, f.groundBottom + 1, f.W, f.H - f.groundBottom, "#6b4a2a");

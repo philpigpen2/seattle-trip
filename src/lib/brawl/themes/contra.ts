@@ -1,46 +1,72 @@
-// Stage 5 — THE JUNGLE BASE. Contra: palms, steel, tracer fire.
-import { bandSky, hash, rect, stars, tile } from "../bg";
+// Contra, Konami 1987 — Stage 1, the jungle. A side-on run-and-gun: one ground
+// line, layered foliage, a girder bridge over the water, and soldiers coming
+// the other way.
+import { hash, rect, tile, type Frame } from "../bg";
 import { hudText } from "../hud";
 import type { Theme } from "./types";
 
+const NIGHT = "#081820";
+const SKY = "#10303c";
+const CANOPY = "#0d2a1e";
+const LEAF = "#1e6b3c";
+const LEAF2 = "#2f8f4c";
+const TRUNK = "#3a2a18";
+const ROCK = "#6b6252";
+const ROCK2 = "#4a4438";
+const ROCK3 = "#8f8672";
+const GRASS = "#3ca02c";
+const WATER = "#1c4c8c";
+const WATER2 = "#2f6cbc";
+const STEEL = "#8a929e";
+const STEEL2 = "#5d6672";
 const INK = "#9ef0c0";
 const SHADOW = "#03181c";
 
-function palm(f: Parameters<Theme["far"]>[0], x: number, base: number, h: number, c: string, lean: number) {
-  for (let i = 0; i < h; i++) {
-    rect(f, x + Math.round((i / h) * lean), base - i, 2, 1, c);
+/** A filled pixel disc. */
+function blob(f: Frame, cx: number, cy: number, r: number, c: string) {
+  for (let dy = -r; dy <= r; dy++) {
+    const hw = Math.round(Math.sqrt(Math.max(0, r * r - dy * dy)));
+    if (hw <= 0) continue;
+    rect(f, cx - hw, cy + dy, hw * 2, 1, c);
   }
-  const tx = x + lean;
-  const ty = base - h;
-  // Fronds droop away from the crown in stepped arcs.
-  for (const dir of [-1, 1]) {
-    for (let n = 0; n < 3; n++) {
-      const span = 8 + n * 3;
-      const drop = n * 2;
-      for (let k = 0; k < span; k++) {
-        const yy = ty - 2 + drop + Math.round((k * k) / (span * 1.6));
-        rect(f, tx + dir * (k + 1) - (dir < 0 ? 1 : 0), yy, 2, 2, c);
-      }
-    }
+}
+
+/** A clump of jungle leaves: overlapping rounded masses, lit from above. */
+function foliage(f: Frame, x: number, baseY: number, w: number, h: number, c: string, c2: string) {
+  const cx = x + w / 2;
+  const masses: [number, number, number][] = [
+    [0, 0.34, 0.5],
+    [-0.3, 0.2, 0.36],
+    [0.31, 0.24, 0.38],
+    [-0.14, 0.62, 0.34],
+    [0.18, 0.7, 0.3],
+  ];
+  for (const [mx, my, mr] of masses) {
+    blob(f, Math.round(cx + mx * w), Math.round(baseY - my * h), Math.round(mr * w * 0.5), c);
   }
-  rect(f, tx - 2, ty - 3, 6, 3, c);
+  // Highlight on the upper leaves only.
+  for (const [mx, my, mr] of masses.slice(3)) {
+    blob(f, Math.round(cx + mx * w), Math.round(baseY - my * h - mr * w * 0.16), Math.round(mr * w * 0.32), c2);
+  }
 }
 
 export const contra: Theme = {
   id: "contra",
-  intro: ["STAGE 1", "THE JUNGLE"],
-  scroll: 0.6,
+  intro: ["STAGE 1", "JUNGLE"],
+  staging: "flat",
+  floor: 30,
+  targetW: 272,
+  scroll: 0.72,
   style: "shoot",
   impact: "boom",
   ink: INK,
   shadow: SHADOW,
 
-  // Score, spare lives as little soldiers, and the letter of the gun you are
-  // carrying — S is the spread.
   hud(f, s) {
     const pad = 5;
     hudText(f, "1P", pad, pad, "#ff6b6b", { shadow: SHADOW });
     hudText(f, String(s.score).padStart(6, "0"), pad, pad + 9, INK, { shadow: SHADOW });
+    // Spare lives, drawn as little soldiers.
     for (let i = 0; i < 3; i++) {
       const x = pad + i * 7;
       const y = pad + 20;
@@ -49,6 +75,7 @@ export const contra: Theme = {
       rect(f, x + 1, y + 7, 1, 2, "#3f4a2a");
       rect(f, x + 3, y + 7, 1, 2, "#3f4a2a");
     }
+    // Current gun.
     const on = Math.floor(s.t / 16) % 2 === 0;
     rect(f, pad, pad + 32, 11, 11, on ? "#e0b83c" : "#8a6f20");
     rect(f, pad + 1, pad + 33, 9, 9, "#1c242b");
@@ -59,6 +86,7 @@ export const contra: Theme = {
 
   heroes: [
     {
+      // Bare arms, headband, combat trousers.
       hair: "long", weapon: "gun",
       pal: {
         skin: "#f0b892", skinShade: "#c98a68",
@@ -104,22 +132,23 @@ export const contra: Theme = {
 
   foes: [
     {
-      hp: 1, speed: 0.95, weight: 4,
+      // Red Falcon infantry, the ones that just run at you.
+      hp: 1, speed: 1.15, weight: 5,
       fighter: {
-        hair: "helm",
+        hair: "cap",
         pal: {
           skin: "#d99a72", skinShade: "#b0714f",
-          hair: "#8a2020", hair2: "#a83030",
+          hair: "#8a2020", hair2: "#c03028",
           shirt: "#c03028", shirt2: "#94221c", accent: "#f0d060",
-          belt: "#2a2233", pants: "#3f4a2a", pants2: "#2d3620",
+          belt: "#2a2233", pants: "#e8c090", pants2: "#c09a68",
           shoes: "#241a14", shoes2: "#180f0c",
         },
       },
     },
     {
-      hp: 1, speed: 1.05, weight: 3,
+      hp: 1, speed: 0.95, weight: 3,
       fighter: {
-        hair: "cap",
+        hair: "helm", weapon: "gun",
         pal: {
           skin: "#c98a5e", skinShade: "#a06740",
           hair: "#2a3320", hair2: "#3f4a2a",
@@ -130,20 +159,7 @@ export const contra: Theme = {
       },
     },
     {
-      hp: 1, speed: 0.85, weight: 2,
-      fighter: {
-        hair: "bald",
-        pal: {
-          skin: "#c47a4a", skinShade: "#9c5b33",
-          hair: "#c47a4a", hair2: "#9c5b33",
-          shirt: "#6b7a3a", shirt2: "#4e5a28", accent: "#e63946",
-          belt: "#2a2233", pants: "#4a5630", pants2: "#353f22",
-          shoes: "#241a14", shoes2: "#180f0c",
-        },
-      },
-    },
-    {
-      hp: 2, speed: 0.62, weight: 1,
+      hp: 2, speed: 0.6, weight: 1, scale: 1.15,
       fighter: {
         hair: "helm", big: true,
         pal: {
@@ -158,93 +174,108 @@ export const contra: Theme = {
   ],
 
   sky(f) {
-    bandSky(f, ["#03151c", "#062430", "#0a3644", "#0e4a54", "#166a68", "#2a8a6a"]);
-    stars(f, 34, "#a8f0d0");
+    rect(f, 0, 0, f.W, f.H, NIGHT);
+    rect(f, 0, 0, f.W, Math.round(f.horizon * 0.55), SKY);
+    for (let y = Math.round(f.horizon * 0.5); y < f.horizon * 0.6; y += 2) {
+      for (let x = (y % 4); x < f.W; x += 4) rect(f, x, y, 2, 1, SKY);
+    }
   },
 
   far(f) {
-    tile(f, 23, 0.1, 40, (x, i) => {
-      const h = Math.max(14, Math.round(f.horizon * (0.16 + hash(i, 101) * 0.22)));
-      palm(f, x, f.horizon + 2, h, "#0a2a2e", Math.round(hash(i, 102) * 6) - 3);
+    // Distant canopy: a solid band of silhouette with tree tops poking up.
+    const base = Math.round(f.horizon * 0.72);
+    tile(f, 22, 0.14, 40, (x, i) => {
+      const h = Math.max(14, Math.round(f.horizon * (0.2 + hash(i, 101) * 0.24)));
+      foliage(f, x, base + 4, 30, h, CANOPY, CANOPY);
     });
+    rect(f, 0, base, f.W, f.horizon - base, CANOPY);
   },
 
   mid(f) {
-    tile(f, 31, 0.28, 50, (x, i) => {
-      const h = Math.max(20, Math.round(f.horizon * (0.24 + hash(i, 103) * 0.26)));
-      palm(f, x, f.horizon + 3, h, "#10403c", Math.round(hash(i, 104) * 8) - 4);
+    // Trunks and lit foliage in front of the canopy.
+    tile(f, 38, 0.36, 60, (x, i) => {
+      const h = Math.max(24, Math.round(f.horizon * (0.34 + hash(i, 103) * 0.3)));
+      rect(f, x + 14, f.horizon - h + 10, 5, h, TRUNK);
+      rect(f, x + 14, f.horizon - h + 10, 2, h, "#4d3a22");
+      foliage(f, x, f.horizon - h + 14, 34, Math.round(h * 0.62), LEAF, LEAF2);
     });
-
-    // The base wall behind the fight.
-    const base = f.horizon;
-    const wh = Math.max(20, Math.round(base * 0.24));
-    rect(f, 0, base - wh, f.W, wh + 4, "#2c3a44");
-    rect(f, 0, base - wh, f.W, 2, "#48606e");
-    tile(f, 22, 0.5, 26, (x, i) => {
-      rect(f, x, base - wh + 4, 18, wh - 6, "#25313a");
-      rect(f, x, base - wh + 4, 18, 1, "#3a4d59");
-      rect(f, x + 1, base - 4, 1, 1, "#48606e");
-      rect(f, x + 16, base - 4, 1, 1, "#48606e");
-      if (hash(i, 105) > 0.66) {
-        // Hazard stripes.
-        for (let k = 0; k < 5; k++) rect(f, x + 3 + k * 3, base - wh + 7, 2, 4, k % 2 ? "#1c242b" : "#e0b83c");
-      } else if (hash(i, 106) > 0.5) {
-        const on = Math.floor(f.t / 18 + i) % 2 === 0;
-        rect(f, x + 6, base - wh + 8, 6, 5, on ? "#e63946" : "#5a1c22");
-      }
-      // Pipes.
-      rect(f, x + 19, base - wh + 6, 2, wh - 8, "#3f5460");
+    // A lower band of leaves so the wall of jungle feels solid.
+    tile(f, 27, 0.5, 40, (x, i) => {
+      if (hash(i, 112) < 0.4) return;
+      foliage(f, x, f.horizon - 2, 26, 20, "#17512f", LEAF);
     });
+    rect(f, 0, f.horizon - 6, f.W, 6, CANOPY);
   },
 
   ground(f) {
-    const top = f.groundTop;
-    rect(f, 0, f.horizon + 2, f.W, top - f.horizon, "#1c3326");
-    rect(f, 0, top + 2, f.W, f.H - top, "#2a4430");
-    rect(f, 0, top + 2, f.W, 2, "#3a5a3c");
+    const g = f.groundTop;
+    const deep = f.H - g;
 
-    // Steel walkway plates.
-    tile(f, 16, 1, 20, (x) => {
-      rect(f, x, top + 4, 15, f.groundBottom - top - 2, "#33503a");
-      f.ctx.fillStyle = "#2d4733";
-      f.ctx.fillRect(Math.round(x + 15), top + 4, 1, f.groundBottom - top - 2);
-      rect(f, x + 2, top + 6, 1, 1, "#436645");
-      rect(f, x + 12, f.groundBottom - 4, 1, 1, "#436645");
-    });
-
-    // Crates and sandbags along the back.
-    tile(f, 53, 1, 30, (x, i) => {
-      const y = top + 6 + Math.round(hash(i, 107) * 6);
-      const r = hash(i, 108);
-      if (r > 0.7) {
-        rect(f, x, y - 11, 12, 11, "#7a5a34");
-        rect(f, x, y - 11, 12, 1, "#96703f");
-        rect(f, x, y - 6, 12, 1, "#5c421f");
-        rect(f, x + 5, y - 11, 2, 11, "#5c421f");
-      } else if (r > 0.5) {
-        for (let k = 0; k < 3; k++) rect(f, x + (k % 2) * 2, y - 3 - k * 3, 12, 3, k % 2 ? "#6b7050" : "#7d8460");
+    // Every so often the ground gives way to water with a girder bridge.
+    tile(f, 260, 1, 80, (x, i) => {
+      if (hash(i, 105) < 0.45) return;
+      const w = 120;
+      rect(f, x, g, w, deep, WATER);
+      for (let k = 0; k < 4; k++) {
+        const wy = g + 6 + k * 7;
+        const off = Math.round(Math.sin((f.t + k * 40) / 18) * 4);
+        for (let wx = x + off; wx < x + w; wx += 14) rect(f, wx, wy, 7, 1, WATER2);
+      }
+      // Girders under the walkway.
+      rect(f, x, g - 2, w, 4, STEEL);
+      rect(f, x, g - 2, w, 1, ROCK3);
+      for (let k = 0; k <= w; k += 12) {
+        rect(f, x + k, g + 2, 2, 8, STEEL2);
+        rect(f, x + k, g + 9, 12, 2, STEEL2);
       }
     });
 
-    rect(f, 0, f.groundBottom + 1, f.W, f.H - f.groundBottom, "#1a2c1e");
+    // The ground is a rocky ledge, lit along the top and falling away to black.
+    rect(f, 0, g, f.W, deep, ROCK);
+    for (let y = 0; y < deep; y++) {
+      const t = y / deep;
+      if (t > 0.45) {
+        f.ctx.fillStyle = t > 0.78 ? "#241f18" : ROCK2;
+        f.ctx.fillRect(0, g + y, f.W, 1);
+      }
+    }
+    rect(f, 0, g, f.W, 3, GRASS);
+    rect(f, 0, g + 3, f.W, 1, "#2a7a1e");
+    rect(f, 0, g + 4, f.W, 1, ROCK3);
+    tile(f, 5, 1, 12, (x, i) => {
+      if (hash(i, 106) > 0.45) rect(f, x, g - 2, 1, 3, GRASS);
+      if (hash(i, 113) > 0.7) rect(f, x, g - 3, 1, 2, "#2a7a1e");
+    });
+    // Rubble and cracks across the face of the ledge.
+    tile(f, 11, 1, 14, (x, i) => {
+      const y = g + 6 + Math.round(hash(i, 108) * (deep - 12));
+      if (hash(i, 107) > 0.55) rect(f, x, y, 3 + Math.round(hash(i, 114) * 3), 2, ROCK2);
+      if (hash(i, 109) > 0.7) rect(f, x + 3, y - 3, 2, 1, ROCK3);
+      if (hash(i, 115) > 0.86) {
+        rect(f, x + 1, g + 5, 1, 4, ROCK2);
+        rect(f, x + 2, g + 9, 1, 3, ROCK2);
+      }
+    });
   },
 
   fore(f) {
-    // Sandbag wall and ammo crates rolling past in front of the fight.
-    tile(f, 97, 1.3, 30, (x, i) => {
-      const r = hash(i, 109);
-      const y = f.H - 3;
-      if (r > 0.62) {
-        rect(f, x, y - 12, 14, 12, "#5a6b3a");
-        rect(f, x, y - 12, 14, 2, "#75884c");
-        rect(f, x + 3, y - 8, 8, 3, "#e0b83c");
-        rect(f, x + 6, y - 12, 2, 12, "#3f4c26");
-      } else if (r > 0.3) {
-        for (let k = 0; k < 3; k++) {
-          rect(f, x + (k % 2) * 3, y - 4 - k * 4, 16, 4, k % 2 ? "#6b7050" : "#7d8460");
-          rect(f, x + (k % 2) * 3, y - 4 - k * 4, 16, 1, "#8f9670");
-        }
-      }
+    // Weapon capsule drifting across, the way they fly in on a rail.
+    const period = 620;
+    const phase = f.t % period;
+    if (phase < 260) {
+      const cx = Math.round(f.W - (phase / 260) * (f.W + 40) + 20);
+      const cy = Math.round(f.horizon * 0.6 + Math.sin(phase / 22) * 6);
+      rect(f, cx - 9, cy - 5, 18, 10, "#e0e4ec");
+      rect(f, cx - 9, cy - 5, 18, 2, "#ffffff");
+      rect(f, cx - 7, cy - 3, 14, 6, "#d02020");
+      hudText(f, "S", cx - 2, cy - 3, "#ffffff");
+      rect(f, cx + 9, cy - 2, 3, 4, "#8a929e");
+    }
+
+    // Big leaves framing the very front.
+    tile(f, 190, 1.5, 60, (x, i) => {
+      if (hash(i, 111) < 0.5) return;
+      foliage(f, x, f.H, 40, 26, "#0f3a24", "#17512f");
     });
   },
 };

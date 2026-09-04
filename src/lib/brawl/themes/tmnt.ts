@@ -36,6 +36,7 @@ function fire(f: Frame, x: number, y: number, w: number, h: number, seed: number
 
 export const tmnt: Theme = {
   id: "tmnt",
+  targetW: 288,
   intro: ["STAGE 1", "THE STREETS"],
   scroll: 0.58,
   style: "blade",

@@ -11,6 +11,7 @@ const SIGNS = ["BAR", "PIZZA", "24H", "MOTEL", "TATTOO", "NOODLE", "SODA", "ARCA
 
 export const street: Theme = {
   id: "street",
+  targetW: 288,
   intro: ["MISSION 1", "THE STREET"],
   scroll: 0.55,
   style: "brawl",
@@ -288,6 +289,23 @@ export const street: Theme = {
       f.ctx.fillRect(Math.round(x), top + 1, 1, bot - top - 1);
     });
     for (let y = top + 8; y < bot; y += 9) rect(f, 0, y, f.W, 1, "#443e52");
+
+    // Drains, manholes and cracks so the pavement is not a blank field.
+    tile(f, 53, 1, 30, (x, i) => {
+      const y = top + 10 + Math.round(hash(i, 51) * (bot - top - 16));
+      const r = hash(i, 52);
+      if (r > 0.72) {
+        rect(f, x, y, 13, 5, "#3a3448");
+        rect(f, x + 1, y + 1, 11, 3, "#4f4862");
+        rect(f, x + 3, y + 2, 7, 1, "#3a3448");
+      } else if (r > 0.5) {
+        rect(f, x, y, 9, 4, "#39334a");
+        for (let k = 0; k < 4; k++) rect(f, x + 1 + k * 2, y + 1, 1, 2, "#2b2639");
+      } else if (r > 0.34) {
+        rect(f, x, y, 6, 1, "#413b4e");
+        rect(f, x + 5, y + 1, 5, 1, "#413b4e");
+      }
+    });
 
     // Gutter + road at the very bottom.
     rect(f, 0, bot, f.W, 2, "#2f2a3d");
