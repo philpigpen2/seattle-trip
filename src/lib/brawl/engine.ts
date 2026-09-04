@@ -22,6 +22,9 @@ type Hero = {
   health: number;
   /** Sideways offset from their walking position, when steered by hand. */
   ox: number;
+  /** Height above the ground, for the run-and-gun stage that can jump. */
+  jz: number;
+  jv: number;
 };
 
 type Foe = {
@@ -140,6 +143,11 @@ export function mountBrawl(
 
   // Hand control of one of the heroes.
   let taken = false;
+  let lives = 3;
+  let phase: "play" | "dead" | "clear" | "over" = "play";
+  let phaseTimer = 0;
+  /** How far the stage runs before it is finished, in scrolled pixels. */
+  const STAGE_LENGTH = 3400;
   const heldDirs = new Set<0 | 1 | 2 | 3>();
   let wantAttack = false;
 
@@ -197,11 +205,15 @@ export function mountBrawl(
       k: HERO_SCALE[i],
       health: 1,
       ox: 0,
+      jz: 0,
+      jv: 0,
     }));
     foes = [];
     shots = [];
     fx = [];
     spawnIn = 24;
+    phase = "play";
+    phaseTimer = 0;
     clock = 400;
     magic = 5;
     specialIn = theme.special ? Math.round(theme.special.everyFrames * 0.45) : 0;
@@ -383,6 +395,42 @@ export function mountBrawl(
       custom.step();
       return;
     }
+
+    if (phase !== "play") {
+      if (--phaseTimer > 0) return;
+      if (phase === "dead") {
+        lives--;
+        if (lives <= 0) {
+          phase = "over";
+          phaseTimer = 190;
+        } else {
+          heroes.forEach((h) => {
+            h.health = 1;
+            h.state = "walk";
+            h.ox = 0;
+          });
+          foes = [];
+          phase = "play";
+        }
+      } else {
+        // One stage to finish; finishing it starts it again.
+        if (phase === "over") {
+          lives = 3;
+          score = 0;
+        }
+        cam = 0;
+        buildParty();
+      }
+      return;
+    }
+
+    // Reaching the end of the stage finishes it.
+    if (cam > STAGE_LENGTH) {
+      phase = "clear";
+      phaseTimer = 190;
+      score += 5000;
+      return;
+    }
     cam += theme.scroll;
     if (shake > 0) shake = Math.max(0, shake - 0.35);
     if (t % 24 === 0) clock = clock > 0 ? clock - 1 : 400;
@@ -411,14 +459,27 @@ export function mountBrawl(
     for (let hi = 0; hi < heroes.length; hi++) {
       const h = heroes[hi];
       h.health = Math.min(1, h.health + 0.0009);
+      if (h.jz < 0 || h.jv !== 0) {
+        h.jz += h.jv;
+        h.jv += 0.22;
+        if (h.jz >= 0) {
+          h.jz = 0;
+          h.jv = 0;
+        }
+      }
       const mine = taken && hi === player;
       if (mine) {
         // Steered by hand: only what is asked for, and never an auto-swing.
         const speed = 1.5;
         if (heldDirs.has(0)) h.ox = Math.min(W * 0.42, h.ox + speed);
         if (heldDirs.has(2)) h.ox = Math.max(-h.baseX + 14, h.ox - speed);
-        if (heldDirs.has(1)) h.lane = Math.min(1, h.lane + 0.022);
-        if (heldDirs.has(3)) h.lane = Math.max(0, h.lane - 0.022);
+        if (theme.staging === "flat") {
+          // A run-and-gun jumps rather than walking into the screen.
+          if (heldDirs.has(3) && h.jz === 0) h.jv = -3.6;
+        } else {
+          if (heldDirs.has(1)) h.lane = Math.min(1, h.lane + 0.022);
+          if (heldDirs.has(3)) h.lane = Math.max(0, h.lane - 0.022);
+        }
         if (h.state === "walk" && wantAttack && h.cool === 0) {
           h.state =
             theme.style === "blade"
@@ -546,7 +607,12 @@ export function mountBrawl(
         if (victim) {
           victim.state = "hurt";
           victim.timer = 0;
-          victim.health = Math.max(0.18, victim.health - 0.1);
+          const mine = taken && heroes.indexOf(victim) === player;
+          victim.health = Math.max(mine ? 0 : 0.18, victim.health - 0.1);
+          if (mine && victim.health <= 0) {
+            phase = "dead";
+            phaseTimer = 90;
+          }
           foe.state = "hurt";
           foe.timer = 26;
           foe.x += 10;
@@ -649,7 +715,7 @@ export function mountBrawl(
       actors.push({
         y,
         draw: () => {
-          drawFighter(ctx, x, y + hop, h.f, pose, fr, false, undefined, h.k);
+          drawFighter(ctx, x, y + hop + h.jz, h.f, pose, fr, false, undefined, h.k);
           if (theme.style === "shoot" && h.state === "punch" && h.timer >= 4 && h.timer <= 8) {
             const mx = Math.round(x) + Math.round(22 * h.k);
             const my = y - Math.round(18 * h.k);
@@ -838,7 +904,7 @@ export function mountBrawl(
         score: custom.score(),
         hi,
         t,
-        lives: 3,
+        lives,
         magic,
         timer: clock,
         coins: custom.coins?.() ?? 0,
@@ -870,7 +936,7 @@ export function mountBrawl(
       score,
       hi,
       t,
-      lives: 3,
+      lives,
       magic,
       timer: clock,
       coins: 0,
@@ -878,6 +944,20 @@ export function mountBrawl(
       labels: ["1P", "2P", "3P", "4P"],
       inks: heroes.map((h) => h.ink),
     });
+    if (phase !== "play") {
+      const banner = phase === "clear" ? "STAGE CLEAR" : phase === "over" ? "GAME OVER" : "";
+      if (banner) {
+        const bx = Math.round(f.W / 2);
+        const by = Math.round(f.H * 0.38);
+        const bw = banner.length * 12;
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(bx - bw / 2 - 5, by - 5, bw + 10, 22);
+        drawText(ctx, banner, bx, by, phase === "over" ? "#ff6b6b" : theme.ink, {
+          align: "center",
+          scale: 2,
+        });
+      }
+    }
     drawScanlines(f);
     if (wipe > 0) drawWipe(f);
   }

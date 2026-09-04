@@ -67,7 +67,7 @@ export const contra: Theme = {
     hudText(f, "1P", pad, pad, "#ff6b6b", { shadow: SHADOW });
     hudText(f, String(s.score).padStart(6, "0"), pad, pad + 9, INK, { shadow: SHADOW });
     // Spare lives, drawn as little soldiers.
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < s.lives; i++) {
       const x = pad + i * 7;
       const y = pad + 20;
       rect(f, x + 1, y, 3, 3, "#f0b892");

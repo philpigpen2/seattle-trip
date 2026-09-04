@@ -139,6 +139,8 @@ const DOG = { fur: "#a8603a", fur2: "#8a4a2a" };
 type Actor = {
   x: number;
   y: number;
+  /** Where they were before this frame moved them. */
+  py: number;
   vx: number;
   vy: number;
   w: number;
@@ -351,6 +353,11 @@ export function createMario(): CustomStage {
   let coinCount = 0;
   let playerIndex = 1;
   let taken = false;
+  let lives = 3;
+  let phase: "play" | "dead" | "clear" | "over" = "play";
+  let phaseTimer = 0;
+  const deaths = { pit: 0, foe: 0 };
+  let bestCol = 0;
   let holdLeft = false;
   let holdRight = false;
   let jumpHeld = false;
@@ -367,9 +374,11 @@ export function createMario(): CustomStage {
   const groundY = () => originY + GROUND_ROW * TILE;
 
   function makeActor(x: number, big: boolean): Actor {
+    const top = groundY() - (big ? 28 : 16);
     return {
       x,
-      y: groundY() - (big ? 28 : 16),
+      y: top,
+      py: top,
       vx: 0,
       vy: 0,
       w: big ? 14 : 11,
@@ -379,6 +388,31 @@ export function createMario(): CustomStage {
       frame: 0,
       flash: 0,
     };
+  }
+
+  /** Puts everyone back at the start of the course. */
+  function restartLevel(fresh: boolean) {
+    party = [0, 1, 2, 3].map((i) => makeActor(40 + i * 22, i < 2));
+    party[2].h = 20;
+    party[2].w = 12;
+    party[3].h = 16;
+    dog = makeActor(20, false);
+    dog.h = 13;
+    dog.w = 14;
+    cam = 0;
+    foes = [];
+    pops = [];
+    coins = [];
+    spent.clear();
+    bumped.clear();
+    nextSpawnCol = 0;
+    phase = "play";
+    phaseTimer = 0;
+    if (fresh) {
+      points = 0;
+      coinCount = 0;
+      lives = 3;
+    }
   }
 
   function reset(w: number, h: number) {
@@ -394,22 +428,16 @@ export function createMario(): CustomStage {
     dog = makeActor(20, false);
     dog.h = 13;
     dog.w = 14;
-    foes = [];
-    pops = [];
-    coins = [];
-    spent.clear();
-    bumped.clear();
-    nextSpawnCol = 0;
     t = 0;
-    points = 0;
-    coinCount = 0;
     taken = false;
     holdLeft = holdRight = jumpHeld = false;
+    restartLevel(true);
   }
 
   /* --------------------------------------------------------------- physics */
 
   function moveActor(a: Actor, gravity = 0.5) {
+    a.py = a.y;
     a.vy = Math.min(7.5, a.vy + gravity);
 
     // Horizontal, then resolve against anything solid.
@@ -472,33 +500,43 @@ export function createMario(): CustomStage {
 
   /** Is there a hole or a wall just in front of this actor? */
   function needsJump(a: Actor): boolean {
-    const ahead = Math.floor((a.x + a.w + 6) / TILE);
     const row = Math.floor((a.y + a.h + 2 - originY) / TILE);
-    const wallRow = Math.floor((a.y + a.h - 6 - originY) / TILE);
-    if (solidAt(ahead, wallRow)) return true;
-    if (!solidAt(ahead, row) && !solidAt(ahead + 1, row)) return true;
+    // Something to climb: look far enough ahead to still be moving forward.
+    for (const reach of [10, 20, 28]) {
+      const ahead = Math.floor((a.x + a.w + reach) / TILE);
+      const wallRow = Math.floor((a.y + a.h - 6 - originY) / TILE);
+      if (solidAt(ahead, wallRow)) return true;
+    }
+    // A hole to clear.
+    const gap = Math.floor((a.x + a.w + 8) / TILE);
+    if (!solidAt(gap, row) && !solidAt(gap + 1, row)) return true;
     return false;
   }
 
-  /** Is a goomba or koopa close enough ahead to be worth jumping on? */
+  /**
+   * Is there an enemy at the distance where a hop would come down on its head?
+   * Jumping when it is already touching only gets you hit, which is what used
+   * to happen.
+   */
   function foeAhead(a: Actor): boolean {
-    return foes.some(
-      (foe) =>
-        foe.alive &&
-        foe.x > a.x &&
-        foe.x - a.x < 34 &&
-        Math.abs(foe.y + foe.h - (a.y + a.h)) < 20,
-    );
+    return foes.some((foe) => {
+      if (!foe.alive) return false;
+      const gap = foe.x - (a.x + a.w);
+      // Jump early and often: landing past one is as good as landing on it.
+      return gap > -6 && gap < 62 && Math.abs(foe.y + foe.h - (a.y + a.h)) < 22;
+    });
   }
 
   function runRight(a: Actor, speed: number) {
-    a.vx += (speed - a.vx) * 0.18;
+    // Air control matters: without it a jump against a wall goes straight up
+    // and lands in the same place, over and over.
+    a.vx += (speed - a.vx) * (a.onGround ? 0.18 : 0.09);
     if (speed > 0.15) a.face = 1;
     else if (Math.abs(a.vx) < 0.1) a.vx = 0;
     // Jump a wall, a hole, or something worth landing on.
     if (a.onGround && speed > 0.3) {
-      if (needsJump(a)) a.vy = -7.1;
-      else if (foeAhead(a)) a.vy = -5.4; // a short hop, to come down on it
+      if (needsJump(a)) a.vy = -8.6;
+      else if (foeAhead(a)) a.vy = -7.6; // over it, or down on its head
     }
   }
 
@@ -510,14 +548,14 @@ export function createMario(): CustomStage {
       if (LEVEL.goombas.includes(col)) {
         foes.push({
           kind: "goomba", alive: true, flat: 0, col,
-          x: worldX, y: groundY() - 16, vx: -0.42, vy: 0, w: 15, h: 16,
+          x: worldX, y: groundY() - 16, py: groundY() - 16, vx: -0.42, vy: 0, w: 15, h: 16,
           onGround: true, face: -1, frame: 0, flash: 0,
         });
       }
       if (LEVEL.koopas.includes(col)) {
         foes.push({
           kind: "koopa", alive: true, flat: 0, col,
-          x: worldX, y: groundY() - 25, vx: -0.34, vy: 0, w: 15, h: 25,
+          x: worldX, y: groundY() - 25, py: groundY() - 25, vx: -0.34, vy: 0, w: 15, h: 25,
           onGround: true, face: -1, frame: 0, flash: 0,
         });
       }
@@ -527,7 +565,25 @@ export function createMario(): CustomStage {
 
   function step() {
     t++;
-    const lead = party[playerIndex];
+
+    if (phase !== "play") {
+      if (--phaseTimer > 0) return;
+      if (phase === "dead") {
+        lives--;
+        if (lives <= 0) {
+          phase = "over";
+          phaseTimer = 200;
+        } else {
+          restartLevel(false);
+        }
+      } else {
+        // One course to finish; finishing it starts it again.
+        restartLevel(phase === "over");
+      }
+      return;
+    }
+
+    const lead = party[taken ? playerIndex : 0];
 
     for (let i = 0; i < party.length; i++) {
       const a = party[i];
@@ -544,7 +600,7 @@ export function createMario(): CustomStage {
           a.vx *= a.onGround ? 0.78 : 0.96;
           if (Math.abs(a.vx) < 0.05) a.vx = 0;
         }
-        if (jumpHeld && a.onGround) a.vy = -7.6;
+        if (jumpHeld && a.onGround) a.vy = -8.8;
         if (!jumpHeld && a.vy < -3.4) a.vy = -3.4; // short hop when tapped
       } else if (!taken && i === 0) {
         // One of them sets the pace for the attract loop.
@@ -558,7 +614,15 @@ export function createMario(): CustomStage {
       }
       moveActor(a);
       if (a.y > originY + ROWS * TILE + 40) {
-        // Fell in a pit: back on solid ground, briefly flashing.
+        if (a === lead && taken) {
+          // A life, but only when somebody is actually playing: the attract
+          // loop should run the course, not die in front of you.
+          phase = "dead";
+          phaseTimer = 90;
+          deaths.pit++;
+          return;
+        }
+        // The others just climb back out.
         a.x = cam + 24;
         a.y = groundY() - a.h - 40;
         a.vy = 0;
@@ -599,14 +663,22 @@ export function createMario(): CustomStage {
         const hit =
           a.x + a.w > foe.x && a.x < foe.x + foe.w && a.y + a.h > foe.y && a.y < foe.y + foe.h;
         if (!hit) continue;
-        // Coming down on its head counts; walking into it does not.
-        if (!a.onGround && a.vy > -1 && a.y + a.h - Math.max(0, a.vy) <= foe.y + 9) {
+        // Coming down on its head counts; walking into it does not. Test
+        // against where they were last frame — landing on one puts them on the
+        // ground tile underneath, so `onGround` is already true by now.
+        if (a.py + a.h <= foe.y + 8 && a.y + a.h > foe.y) {
           // Landed on its head.
           foe.alive = false;
           foe.flat = 34;
           a.vy = -4.6;
           points += 100;
           pops.push({ x: foe.x + 8, y: foe.y - 4, life: 34, text: "100" });
+        } else if (a === lead && taken) {
+          // Walked into while playing: a life.
+          phase = "dead";
+          phaseTimer = 90;
+          deaths.foe++;
+          return;
         } else {
           a.vx = -1.6 * (foe.x > a.x ? 1 : -1);
           a.vy = -2.2;
@@ -630,6 +702,16 @@ export function createMario(): CustomStage {
     for (const [k, v] of bumped) {
       if (v <= 1) bumped.delete(k);
       else bumped.set(k, v - 1);
+    }
+
+    bestCol = Math.max(bestCol, Math.round(lead.x / TILE));
+
+    // Reaching the flagpole finishes the course.
+    if (lead.x > LEVEL.flag * TILE) {
+      phase = "clear";
+      phaseTimer = 200;
+      points += 1000;
+      return;
     }
 
     // The camera follows whoever is being played, and never backs up.
@@ -732,6 +814,19 @@ export function createMario(): CustomStage {
     }
 
     for (const p of pops) drawText(ctx, p.text, Math.round(sx(p.x)), Math.round(p.y), WHITE, { align: "center" });
+
+    // Lives, and the words that stop the course.
+    drawText(ctx, "x" + Math.max(0, lives), 6, originY + 4 * TILE, WHITE);
+    const banner =
+      phase === "clear" ? "COURSE CLEAR" : phase === "over" ? "GAME OVER" : phase === "dead" ? "" : null;
+    if (banner) {
+      const bx = Math.round(W / 2);
+      const by = Math.round(originY + 6 * TILE);
+      const bw = banner.length * 12;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(bx - bw / 2 - 5, by - 5, bw + 10, 22);
+      drawText(ctx, banner, bx, by, phase === "over" ? "#e45c10" : WHITE, { align: "center", scale: 2 });
+    }
     void ORANGE;
     void BLACK;
   }
@@ -741,6 +836,15 @@ export function createMario(): CustomStage {
     step,
     draw,
     score: () => points,
+
+    /** Internals, for the headless play-tests. */
+    debug: () => ({
+      cam: Math.round(cam),
+      col: Math.round(party[0].x / TILE),
+      party: party.map((a) => `${Math.round(a.x)},${Math.round(a.y)}${a.onGround ? "g" : "a"}`).join(" "),
+      foes: foes.length,
+      taken, phase, lives, bestCol, deaths: `pit ${deaths.pit} foe ${deaths.foe}`,
+    }),
     coins: () => coinCount,
     setPlayer(index: number) {
       playerIndex = Math.max(0, Math.min(party.length - 1, index));

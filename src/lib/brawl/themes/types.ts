@@ -42,6 +42,8 @@ export type CustomStage = {
   input?(dir: 0 | 1 | 2 | 3): void;
   /** The viewer let go — whoever they are driving should come to a stop. */
   release?(): void;
+  /** Internals, for the headless play-tests. */
+  debug?(): Record<string, unknown>;
 };
 
 export type Theme = {

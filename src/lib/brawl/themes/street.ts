@@ -25,7 +25,7 @@ export const street: Theme = {
     if (Math.floor(s.t / 22) % 2 === 0) hudText(f, "1UP", pad, pad, "#ff6b6b", { shadow: SHADOW });
     hudText(f, String(s.score).padStart(6, "0"), pad, pad + 9, INK, { shadow: SHADOW });
     bar(f, pad + 1, pad + 19, 44, 4, s.health[1], "#e6483d", "#ff9a86", "#3a1420");
-    lives(f, pad + 1, pad + 29, 3, "#4fd1ff");
+    lives(f, pad + 1, pad + 29, s.lives, "#4fd1ff");
     hudText(f, "HI", f.W - pad, pad, "#ff6b6b", { align: "right", shadow: SHADOW });
     hudText(f, String(s.hi).padStart(6, "0"), f.W - pad, pad + 9, INK, { align: "right", shadow: SHADOW });
     if (f.W > 210) {

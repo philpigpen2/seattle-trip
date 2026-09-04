@@ -44,7 +44,7 @@ export const goldenaxe: Theme = {
       rect(f, x, y, 4, 1, filled ? "#9adcff" : "#33405f");
       rect(f, x + 1, y - 2, 2, 2, "#8a6a3a");
     }
-    lives(f, pad + 1, pad + 32, 3, "#e0503a");
+    lives(f, pad + 1, pad + 32, s.lives, "#e0503a");
     hudText(f, "HI", f.W - pad, pad, INK, { align: "right", shadow: SHADOW });
     hudText(f, String(s.hi).padStart(6, "0"), f.W - pad, pad + 9, "#f4ecd8", { align: "right", shadow: SHADOW });
   },

@@ -169,10 +169,12 @@ export function createPacman(): CustomStage {
   let lives = 3;
   let frightTimer = 0;
   let chain = 0;
-  let dying = 0;
   let pops: Pop[] = [];
   let fruit = 0;
   let playerIndex = 1;
+  /** "play" | "ready" | "dead" | "clear" | "over" */
+  let phase: "play" | "ready" | "dead" | "clear" | "over" = "ready";
+  let phaseTimer = 90;
   /**
    * Steering by hand. Once somebody takes over they keep him: the attract mode
    * never picks a route for him again. He simply carries straight on until a
@@ -185,6 +187,18 @@ export function createPacman(): CustomStage {
 
   let pac: Actor = { col: 13, row: 23, off: 0.5, dir: 2, next: 2, speed: 0.09 };
   let ghosts: Ghost[] = [];
+
+  function restart() {
+    resetDots();
+    resetActors();
+    t = 0;
+    points = 0;
+    lives = 3;
+    pops = [];
+    fruit = 0;
+    phase = "ready";
+    phaseTimer = 90;
+  }
 
   function resetDots() {
     dots = MAZE.map((line) => Array.from(line, (ch) => ch === "."));
@@ -211,6 +225,7 @@ export function createPacman(): CustomStage {
     }));
     frightTimer = 0;
     chain = 0;
+    route = [];
   }
 
   function remainingDots() {
@@ -219,46 +234,79 @@ export function createPacman(): CustomStage {
     return n;
   }
 
-  /** First step of the shortest path to the nearest uneaten dot. */
-  function pacTarget(): Dir {
-    const seen = new Set<number>();
-    const queue: { col: number; row: number; first: Dir }[] = [];
-    for (let d = 0 as Dir; d < 4; d = (d + 1) as Dir) {
-      if (d === ((pac.dir + 2) % 4) && remainingDots() > 2) continue;
-      const nc = ((pac.col + DX[d]) % COLS + COLS) % COLS;
-      const nr = pac.row + DY[d];
-      if (isWall(nc, nr, true)) continue;
-      // Never turn directly into a ghost that is right there.
-      const blocked = ghosts.some(
-        (g) => g.mode !== "fright" && g.mode !== "eyes" && g.col === nc && g.row === nr,
-      );
-      if (blocked) continue;
-      queue.push({ col: nc, row: nr, first: d });
-      seen.add(nr * COLS + nc);
-    }
-    for (let head = 0; head < queue.length && head < 900; head++) {
+  /**
+   * Plans a whole route to the nearest uneaten dot and commits to it. Working
+   * out only the first step at every corner makes him ping-pong between two
+   * cells and stop eating, which is what used to happen.
+   */
+  let route: Dir[] = [];
+
+  function planRoute(avoidGhosts: boolean): boolean {
+    const start = pac.row * COLS + pac.col;
+    const cameFrom = new Map<number, { from: number; dir: Dir }>();
+    const queue: number[] = [start];
+    const seen = new Set<number>([start]);
+
+    for (let head = 0; head < queue.length && head < 1200; head++) {
       const node = queue[head];
-      if (dots[node.row]?.[node.col] || pellets[node.row]?.[node.col]) {
-        // Do not walk straight into a ghost to get it.
-        const danger = ghosts.some(
+      const col = node % COLS;
+      const row = (node - col) / COLS;
+      const hasDot = dots[row]?.[col] || pellets[row]?.[col];
+      const guarded =
+        avoidGhosts &&
+        ghosts.some(
           (g) =>
             g.mode !== "fright" &&
             g.mode !== "eyes" &&
-            Math.abs(g.col - node.col) + Math.abs(g.row - node.row) < 3,
+            Math.abs(g.col - col) + Math.abs(g.row - row) < 3,
         );
-        if (!danger) return node.first;
+      if (node !== start && hasDot && !guarded) {
+        // Walk the parents back to build the list of turns.
+        const steps: Dir[] = [];
+        let at = node;
+        while (at !== start) {
+          const link = cameFrom.get(at)!;
+          steps.push(link.dir);
+          at = link.from;
+        }
+        steps.reverse();
+        route = steps;
+        return true;
       }
       for (let d = 0 as Dir; d < 4; d = (d + 1) as Dir) {
-        const nc = ((node.col + DX[d]) % COLS + COLS) % COLS;
-        const nr = node.row + DY[d];
+        const nc = ((col + DX[d]) % COLS + COLS) % COLS;
+        const nr = row + DY[d];
         if (isWall(nc, nr, true)) continue;
+        // Do not plan a path through a ghost that is hunting.
+        if (
+          avoidGhosts &&
+          ghosts.some(
+            (g) =>
+              g.mode !== "fright" && g.mode !== "eyes" && g.col === nc && g.row === nr,
+          )
+        )
+          continue;
         const key = nr * COLS + nc;
         if (seen.has(key)) continue;
         seen.add(key);
-        queue.push({ col: nc, row: nr, first: node.first });
+        cameFrom.set(key, { from: node, dir: d });
+        queue.push(key);
       }
     }
-    return pac.dir;
+    return false;
+  }
+
+  function pacTarget(): Dir {
+    if (route.length === 0 && !planRoute(true)) planRoute(false);
+    const next = route.shift();
+    if (next === undefined) return pac.dir;
+    // If the plan has gone stale, throw it away and start again.
+    const nc = ((pac.col + DX[next]) % COLS + COLS) % COLS;
+    if (isWall(nc, pac.row + DY[next], true)) {
+      route = [];
+      return pac.dir;
+    }
+    return next;
   }
 
   /** Ghosts pick the legal turn that gets them closest to their target. */
@@ -325,17 +373,21 @@ export function createPacman(): CustomStage {
       cell = Math.max(4, Math.min(Math.floor((H - marquee - 4) / ROWS), Math.floor(W / COLS)));
       ox = Math.round((W - COLS * cell) / 2);
       oy = Math.max(marquee, Math.round((H - ROWS * cell) / 2));
-      resetDots();
-      resetActors();
-      t = 0;
-      points = 0;
-      lives = 3;
-      dying = 0;
-      pops = [];
-      fruit = 0;
+      restart();
     },
 
     score: () => points,
+
+    /** Internals, for the headless play-tests. */
+    debug: () => ({
+      col: pac.col, row: pac.row, dir: pac.dir, off: Number(pac.off.toFixed(2)),
+      dots: dots.reduce((n, r) => n + r.filter(Boolean).length, 0),
+      pellets: pellets.reduce((n, r) => n + r.filter(Boolean).length, 0),
+      t, phase, lives, taken,
+      route: route.length,
+      openDirs: [0, 1, 2, 3].filter((d) => !isWall(((pac.col + DX[d as Dir]) % COLS + COLS) % COLS, pac.row + DY[d as Dir], true)),
+      ghosts: ghosts.map((g) => `${g.mode}@${g.col},${g.row}`).join(" "),
+    }),
 
     setPlayer(index: number) {
       playerIndex = Math.max(0, Math.min(FAMILY.length - 1, index));
@@ -352,11 +404,30 @@ export function createPacman(): CustomStage {
 
     step() {
       t++;
-      if (dying > 0) {
-        dying--;
-        if (dying === 0) {
+
+      if (phase === "ready") {
+        if (--phaseTimer <= 0) phase = "play";
+        return;
+      }
+      if (phase === "clear") {
+        // One level to finish; finishing it starts it again.
+        if (--phaseTimer <= 0) restart();
+        return;
+      }
+      if (phase === "over") {
+        if (--phaseTimer <= 0) restart();
+        return;
+      }
+      if (phase === "dead") {
+        if (--phaseTimer > 0) return;
+        lives--;
+        if (lives <= 0) {
+          phase = "over";
+          phaseTimer = 200;
+        } else {
           resetActors();
-          lives = lives > 1 ? lives - 1 : 3;
+          phase = "ready";
+          phaseTimer = 70;
         }
         return;
       }
@@ -397,14 +468,16 @@ export function createPacman(): CustomStage {
       }
       if (pellets[pac.row]?.[pac.col]) {
         pellets[pac.row][pac.col] = false;
+        route = [];
         points += 50;
         frightTimer = 420;
         chain = 0;
         for (const g of ghosts) if (g.mode !== "eyes") g.mode = "fright";
       }
       if (remainingDots() === 0) {
-        resetDots();
-        resetActors();
+        phase = "clear";
+        phaseTimer = 170;
+        return;
       }
 
       if (frightTimer > 0 && --frightTimer === 0) {
@@ -465,7 +538,8 @@ export function createPacman(): CustomStage {
             const p = pixel(g);
             pops.push({ x: p.x, y: p.y, life: 48, text: String(value) });
           } else if (g.mode !== "eyes") {
-            dying = 90;
+            phase = "dead";
+            phaseTimer = 100;
           }
         }
       }
@@ -525,11 +599,12 @@ export function createPacman(): CustomStage {
       }
 
       // Pac-Man: a disc with a wedge cut out, facing the way he is going.
-      if (dying === 0 || Math.floor(dying / 4) % 2 === 0) {
+      const dyingNow = phase === "dead";
+      if (!dyingNow || Math.floor(phaseTimer / 4) % 2 === 0) {
         const p = pixel(pac);
         const r = cell * 0.8;
         const chomp = !taken || rolling;
-        const open = dying > 0 ? 1 : chomp ? Math.abs(Math.sin(t / 5)) * 0.85 : 0.32;
+        const open = dyingNow ? 1 : chomp ? Math.abs(Math.sin(t / 5)) * 0.85 : 0.32;
         const face = (pac.dir * Math.PI) / 2;
         ctx.fillStyle = YELLOW;
         for (let dy = -r; dy <= r; dy++) {
@@ -592,6 +667,21 @@ export function createPacman(): CustomStage {
 
       for (const p of pops) {
         drawText(ctx, p.text, Math.round(p.x), Math.round(p.y) - 3, "#00ffff", { align: "center" });
+      }
+
+      // The words the cabinet puts in the middle of the maze.
+      const banner =
+        phase === "ready" ? "READY!" : phase === "clear" ? "LEVEL CLEAR" : phase === "over" ? "GAME OVER" : null;
+      if (banner) {
+        const bx = Math.round(ox + (COLS * cell) / 2);
+        const by = Math.round(oy + 17 * cell);
+        const w = banner.length * 6 * 2;
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(bx - w / 2 - 4, by - 4, w + 8, 20);
+        drawText(ctx, banner, bx, by, phase === "over" ? "#ff0000" : YELLOW, {
+          align: "center",
+          scale: 2,
+        });
       }
 
       // Readout: in the left margin when the screen is wide, above the maze
