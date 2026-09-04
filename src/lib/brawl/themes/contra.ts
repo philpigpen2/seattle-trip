@@ -110,7 +110,7 @@ export const contra: Theme = {
       hair: "pony", weapon: "gun",
       pal: {
         skin: "#f6c9a4", skinShade: "#d09a75",
-        hair: "#5b3520", hair2: "#7d4b2d",
+        hair: "#6b4423", hair2: "#8a5c30",
         shirt: "#f0a93c", shirt2: "#c07f22", accent: "#2f8ad0",
         belt: "#2a2f22", pants: "#4a5630", pants2: "#353f22",
         shoes: "#3a2a20", shoes2: "#281c14",
@@ -120,7 +120,7 @@ export const contra: Theme = {
       hair: "bob", weapon: "gun",
       pal: {
         skin: "#f6c9a4", skinShade: "#d09a75",
-        hair: "#c98a3c", hair2: "#e5ad5c",
+        hair: "#f0d488", hair2: "#fbe6ae",
         shirt: "#7ad06a", shirt2: "#52a046", accent: "#e63946",
         belt: "#2a2f22", pants: "#3f4a2a", pants2: "#2d3620",
         shoes: "#3a2a20", shoes2: "#281c14",
@@ -128,7 +128,7 @@ export const contra: Theme = {
     },
   ],
 
-  dog: { fur: "#c8a25a", fur2: "#a07c38", nose: "#1a1410", collar: "#e63946" },
+  dog: { fur: "#a8603a", fur2: "#8a4a2a", nose: "#1a1410", collar: "#e63946" },
 
   foes: [
     {

@@ -61,7 +61,7 @@ export const street: Theme = {
       hair: "pony",
       pal: {
         skin: "#f6c9a4", skinShade: "#d09a75",
-        hair: "#5b3520", hair2: "#7d4b2d",
+        hair: "#6b4423", hair2: "#8a5c30",
         shirt: "#9b5cf0", shirt2: "#7a41c4", accent: "#ffd166",
         belt: "#2a2233", pants: "#22304d", pants2: "#1a253c",
         shoes: "#ffd166", shoes2: "#d3a63f",
@@ -73,7 +73,7 @@ export const street: Theme = {
       skirt: true,
       pal: {
         skin: "#f6c9a4", skinShade: "#d09a75",
-        hair: "#c98a3c", hair2: "#e5ad5c",
+        hair: "#f0d488", hair2: "#fbe6ae",
         shirt: "#ff5c8a", shirt2: "#d63f6c", accent: "#ffffff",
         belt: "#2a2233", pants: "#3a5fb0", pants2: "#2d4a8c",
         shoes: "#f4f1ea", shoes2: "#cfc9bd",
@@ -81,7 +81,7 @@ export const street: Theme = {
     },
   ],
 
-  dog: { fur: "#e0b170", fur2: "#bd8c4e", nose: "#2a1a14", collar: "#e6483d" },
+  dog: { fur: "#a8603a", fur2: "#8a4a2a", nose: "#2a1a14", collar: "#e6483d" },
 
   foes: [
     {

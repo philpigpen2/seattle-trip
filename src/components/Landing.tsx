@@ -9,6 +9,8 @@ import PlayerPicker from "./PlayerPicker";
 
 /** Games you can take control of. The rest play themselves for now. */
 const PLAYABLE = new Set(["pacman"]);
+/** Games that use the whole screen, so the page furniture gets out of the way. */
+const FULL_SCREEN = new Set(["pacman"]);
 
 export default function Landing({ game }: { game?: string }) {
   const [pinned, setPinned] = useState<string | null>(
@@ -34,6 +36,7 @@ export default function Landing({ game }: { game?: string }) {
   }, []);
 
   const playing = pinned !== null && PLAYABLE.has(pinned);
+  const full = FULL_SCREEN.has(pinned ?? current ?? "");
 
   useEffect(() => {
     if (!playing) return;
@@ -56,29 +59,46 @@ export default function Landing({ game }: { game?: string }) {
         />
       </div>
 
-      <div className="pointer-events-none relative z-10 flex min-h-screen w-full flex-col items-center overflow-hidden px-3 pt-[clamp(120px,19vh,196px)] text-center">
-        <h1 className="font-arcade leading-[1.35] text-[clamp(16px,5.6vw,64px)] text-[#ffe9a8] [text-shadow:3px_3px_0_#c0392b,6px_6px_0_#2a0f22]">
-          PHIL LANEY
-        </h1>
+      {full ? (
+        // A full-screen game gets a slim marquee instead of a centred block.
+        <div className="pointer-events-none relative z-10 flex w-full items-center justify-between gap-3 px-4 pt-3">
+          <h1 className="font-arcade text-[clamp(11px,2.2vw,20px)] leading-none text-[#ffe9a8] [text-shadow:2px_2px_0_#c0392b]">
+            PHIL LANEY
+          </h1>
+          <SignInButton mode="modal" forceRedirectUrl="/" signUpForceRedirectUrl="/">
+            <button
+              type="button"
+              className="font-arcade pointer-events-auto cursor-pointer bg-[#12122e] px-3 py-2 text-[clamp(7px,1.4vw,11px)] text-[#ffd166] ring-2 ring-[#ffd166] transition-colors hover:bg-[#ffd166] hover:text-[#12122e]"
+            >
+              <span className="arcade-blink">&#9654;</span> PRESS START
+            </button>
+          </SignInButton>
+        </div>
+      ) : (
+        <div className="pointer-events-none relative z-10 flex min-h-screen w-full flex-col items-center overflow-hidden px-3 pt-[clamp(120px,19vh,196px)] text-center">
+          <h1 className="font-arcade leading-[1.35] text-[clamp(16px,5.6vw,64px)] text-[#ffe9a8] [text-shadow:3px_3px_0_#c0392b,6px_6px_0_#2a0f22]">
+            PHIL LANEY
+          </h1>
 
-        <p className="font-arcade mt-5 text-[clamp(7px,1.7vw,12px)] leading-[2] text-[#8fe3ff] [text-shadow:2px_2px_0_#101033]">
-          PERSONAL APPS &amp; PROJECTS
-        </p>
+          <p className="font-arcade mt-5 text-[clamp(7px,1.7vw,12px)] leading-[2] text-[#8fe3ff] [text-shadow:2px_2px_0_#101033]">
+            PERSONAL APPS &amp; PROJECTS
+          </p>
 
-        <SignInButton mode="modal" forceRedirectUrl="/" signUpForceRedirectUrl="/">
-          <button
-            type="button"
-            className="font-arcade pointer-events-auto mt-9 inline-block cursor-pointer bg-[#12122e] px-6 py-4 text-[clamp(9px,2vw,15px)] text-[#ffd166] transition-colors hover:bg-[#ffd166] hover:text-[#12122e] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#8fe3ff]"
-            style={{ boxShadow: "0 0 0 4px #0a0b23, 0 0 0 8px #ffd166, 0 10px 0 4px #00000055" }}
-          >
-            <span className="arcade-blink">&#9654;</span> PRESS START
-          </button>
-        </SignInButton>
+          <SignInButton mode="modal" forceRedirectUrl="/" signUpForceRedirectUrl="/">
+            <button
+              type="button"
+              className="font-arcade pointer-events-auto mt-9 inline-block cursor-pointer bg-[#12122e] px-6 py-4 text-[clamp(9px,2vw,15px)] text-[#ffd166] transition-colors hover:bg-[#ffd166] hover:text-[#12122e] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#8fe3ff]"
+              style={{ boxShadow: "0 0 0 4px #0a0b23, 0 0 0 8px #ffd166, 0 10px 0 4px #00000055" }}
+            >
+              <span className="arcade-blink">&#9654;</span> PRESS START
+            </button>
+          </SignInButton>
 
-        <p className="font-arcade mt-5 text-[clamp(6px,1.4vw,9px)] leading-[2.2] text-[#b9b2e0] [text-shadow:2px_2px_0_#101033]">
-          {playing ? "HOLD ARROWS, DRAG OR THE PAD TO MOVE" : "SIGN IN TO CONTINUE"}
-        </p>
-      </div>
+          <p className="font-arcade mt-5 text-[clamp(6px,1.4vw,9px)] leading-[2.2] text-[#b9b2e0] [text-shadow:2px_2px_0_#101033]">
+            SIGN IN TO CONTINUE
+          </p>
+        </div>
+      )}
 
       {/* Cabinet controls, over the game. */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-2 p-3">

@@ -855,21 +855,24 @@ export function mountBrawl(
   if (reduced) render();
   else raf = requestAnimationFrame(loop);
 
+  // Arrows, WASD, and the usual vi keys — whatever a hand falls on.
   const KEYS: Record<string, 0 | 1 | 2 | 3> = {
     ArrowRight: 0, ArrowDown: 1, ArrowLeft: 2, ArrowUp: 3,
-    d: 0, s: 1, a: 2, w: 3, D: 0, S: 1, A: 2, W: 3,
+    d: 0, s: 1, a: 2, w: 3,
+    l: 0, j: 1, h: 2, k: 3,
   };
+  const dirFor = (key: string) => KEYS[key] ?? KEYS[key.toLowerCase()];
   // Movement lasts only while a direction is actually being held.
   const down = new Set<string>();
   const onKey = (e: KeyboardEvent) => {
-    const dir = KEYS[e.key];
+    const dir = dirFor(e.key);
     if (dir === undefined || !custom?.input) return;
     e.preventDefault();
     down.add(e.key);
     custom.input(dir);
   };
   const onKeyUp = (e: KeyboardEvent) => {
-    if (KEYS[e.key] === undefined) return;
+    if (dirFor(e.key) === undefined) return;
     down.delete(e.key);
     if (down.size === 0) custom?.release?.();
   };

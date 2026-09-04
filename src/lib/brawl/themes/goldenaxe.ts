@@ -123,7 +123,7 @@ export const goldenaxe: Theme = {
     },
   ],
 
-  dog: { fur: "#e0b170", fur2: "#bd8c4e", nose: "#2a1a14", collar: "#a01818", hat: "#b0a68c" },
+  dog: { fur: "#a8603a", fur2: "#8a4a2a", nose: "#2a1a14", collar: "#a01818", hat: "#b0a68c" },
 
   foes: [
     {

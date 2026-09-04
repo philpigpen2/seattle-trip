@@ -47,7 +47,7 @@ const FACES: Face[] = [
       ".SSSSSS.",
       "..SSSS..",
     ],
-    key: { H: "#5b3520", P: "#7d4b2d", S: "#f6c9a4", K: "#1a1020" },
+    key: { H: "#6b4423", P: "#8a5c30", S: "#f6c9a4", K: "#1a1020" },
   },
   // Bob
   {
@@ -61,7 +61,7 @@ const FACES: Face[] = [
       ".SSSSSS.",
       "..SSSS..",
     ],
-    key: { H: "#c98a3c", S: "#f6c9a4", K: "#1a1020" },
+    key: { H: "#f0d488", S: "#f6c9a4", K: "#1a1020" },
   },
   // The dog
   {
@@ -75,7 +75,7 @@ const FACES: Face[] = [
       "..FFFFNN",
       "...FFF..",
     ],
-    key: { E: "#bd8c4e", F: "#e0b170", K: "#1a1020", N: "#2a1a14" },
+    key: { E: "#8a4a2a", F: "#a8603a", K: "#1a1020", N: "#2a1a14" },
   },
 ];
 

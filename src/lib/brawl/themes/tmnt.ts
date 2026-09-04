@@ -77,7 +77,7 @@ export const tmnt: Theme = {
     turtle("#d63f4a", "sai"),
   ],
 
-  dog: { fur: "#e0b170", fur2: "#bd8c4e", nose: "#2a1a14", collar: "#3fd06a" },
+  dog: { fur: "#a8603a", fur2: "#8a4a2a", nose: "#2a1a14", collar: "#3fd06a" },
 
   foes: [
     {

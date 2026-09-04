@@ -63,9 +63,9 @@ type Member = { topper: Topper; hair: string };
 const FAMILY: Member[] = [
   { topper: "long", hair: "#8a3a1e" },
   { topper: "cap", hair: "#2f6df0" },
-  { topper: "pony", hair: "#5b3520" },
-  { topper: "bob", hair: "#c98a3c" },
-  { topper: "ears", hair: "#bd8c4e" },
+  { topper: "pony", hair: "#6b4423" },
+  { topper: "bob", hair: "#f0d488" },
+  { topper: "ears", hair: "#a8603a" },
 ];
 
 type Dir = 0 | 1 | 2 | 3; // right, down, left, up
@@ -175,11 +175,11 @@ export function createPacman(): CustomStage {
   let playerIndex = 1;
   /**
    * Steering by hand. Once somebody takes over they keep him: the attract mode
-   * never drives him again, and he only moves while a direction is held, so he
-   * stops the moment they do.
+   * never picks a route for him again. He simply carries straight on until a
+   * direction is pressed, and stands still if he is facing a wall.
    */
   let taken = false;
-  let moving = false;
+  let rolling = false;
   let wanted: Dir | null = null;
   let held: Dir | null = null;
 
@@ -318,13 +318,13 @@ export function createPacman(): CustomStage {
     reset(w, h) {
       W = w;
       H = h;
-      // The cabinet ran on a vertical monitor. The page title owns the top of
-      // the screen, so the maze sits under it and the margins either side
-      // carry the readout.
-      const reserve = Math.round(H * 0.3);
-      cell = Math.max(4, Math.min(Math.floor((H - reserve - 10) / ROWS), Math.floor(W / COLS)));
+      // The cabinet ran on a vertical monitor, so the maze takes the whole
+      // height and the wide margins either side carry the readout.
+      // A thin strip at the top is left for the page's marquee.
+      const marquee = 18;
+      cell = Math.max(4, Math.min(Math.floor((H - marquee - 4) / ROWS), Math.floor(W / COLS)));
       ox = Math.round((W - COLS * cell) / 2);
-      oy = Math.max(reserve, H - ROWS * cell - 6);
+      oy = Math.max(marquee, Math.round((H - ROWS * cell) / 2));
       resetDots();
       resetActors();
       t = 0;
@@ -341,24 +341,13 @@ export function createPacman(): CustomStage {
       playerIndex = Math.max(0, Math.min(FAMILY.length - 1, index));
       wanted = null;
       held = null;
-      moving = false;
+      rolling = false;
       resetActors();
     },
 
     input(dir: Dir) {
       taken = true;
-      moving = true;
       wanted = dir;
-    },
-
-    release() {
-      moving = false;
-      // Come to rest on a cell rather than half way between two.
-      if (pac.off > 0.5) {
-        pac.col = ((pac.col + DX[pac.dir]) % COLS + COLS) % COLS;
-        pac.row += DY[pac.dir];
-      }
-      pac.off = 0;
     },
 
     step() {
@@ -377,17 +366,18 @@ export function createPacman(): CustomStage {
 
       if (!taken) {
         advance(pac, true, pacTarget);
-      } else if (moving) {
-        // Standing on a cell, a new direction can be taken straight away;
-        // mid-corridor it waits for the next corner.
+      } else {
+        // Standing on a cell a new direction is taken straight away; part way
+        // along a corridor it waits for the next corner.
         if (wanted !== null && pac.off < pac.speed && open(wanted)) {
           held = wanted;
           wanted = null;
           pac.dir = held;
         }
         const dir = held ?? pac.dir;
-        // Up against a wall he simply stands there until a way is asked for.
-        if (open(dir)) {
+        // He keeps going until told otherwise, and stops at a wall.
+        rolling = open(dir);
+        if (rolling) {
           pac.dir = dir;
           advance(pac, true, () => {
             if (wanted !== null && open(wanted)) {
@@ -538,7 +528,7 @@ export function createPacman(): CustomStage {
       if (dying === 0 || Math.floor(dying / 4) % 2 === 0) {
         const p = pixel(pac);
         const r = cell * 0.8;
-        const chomp = !taken || moving;
+        const chomp = !taken || rolling;
         const open = dying > 0 ? 1 : chomp ? Math.abs(Math.sin(t / 5)) * 0.85 : 0.32;
         const face = (pac.dir * Math.PI) / 2;
         ctx.fillStyle = YELLOW;

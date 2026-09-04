@@ -168,10 +168,10 @@ export const mario: Theme = {
     { hair: "long", pal: { ...overalls(GREEN, "#007000", WHITE), hair: "#a04000", hair2: "#c86020" } },
     { hair: "cap", moustache: true, pal: { ...overalls("#d82800", "#a81800", WHITE), hair: "#7c3800", hair2: "#d82800" } },
     { hair: "pony", pal: { ...overalls("#9b5cf0", "#7a41c4", "#fce0a0"), hair: "#7c3800", hair2: "#a05820" } },
-    { hair: "bob", skirt: true, pal: { ...overalls("#f878b8", "#c04888", WHITE), hair: "#fcd8a0", hair2: "#e0b070" } },
+    { hair: "bob", skirt: true, pal: { ...overalls("#f878b8", "#c04888", WHITE), hair: "#f0d488", hair2: "#d8bc70" } },
   ],
 
-  dog: { fur: "#e8a038", fur2: "#c07818", nose: BLACK, collar: "#d82800" },
+  dog: { fur: "#a8603a", fur2: "#8a4a2a", nose: BLACK, collar: "#d82800" },
 
   foes: [
     {
