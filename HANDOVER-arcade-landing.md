@@ -29,6 +29,19 @@
 6. **Contra** (`contra`) — side-on jungle platformer, rocky ledge, girder bridge over water,
    five-shot spread, weapon capsule
 
+## Selector and play (2026-09-04, later)
+- The loop is still the default. `GameSelector` along the bottom pins a game (mirrored into
+  `?game=`); AUTO returns to rotation. Games are shown as **pixel icons, never names**.
+- **Pac-Man is playable.** Arrow keys / WASD (window listener in the engine), a swipe on the
+  canvas, or the on-screen `DPad`, which calls `handle.input(dir)` directly.
+- **Five family characters, five Pac-Man slots.** Whoever you pick becomes Pac-Man; the other
+  four take the classic ghost colours. They are told apart by a *topper* — long hair, cap,
+  ponytail, bob, dog ears — drawn on the dome or the disc. `PlayerPicker` chooses.
+- Steering model: a turn is buffered and taken at the first corner where it fits, then held.
+  Do NOT make a held direction override every cell — that wedges him against walls.
+- No input for 7 seconds hands control back to the attract AI.
+- Only Pac-Man is playable so far (`PLAYABLE` in `Landing.tsx`); the rest still play themselves.
+
 ## Verification traps found here
 - **Headless Chrome clamps the layout viewport to 500px wide**, so `--window-size=390,...`
   renders at 500 and crops — apparent mobile overflow was an artifact, not a bug.
