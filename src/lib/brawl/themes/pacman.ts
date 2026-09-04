@@ -49,7 +49,24 @@ const YELLOW = "#ffff00";
 const WHITE = "#ffffff";
 const FRIGHT = "#2121ff";
 
-const GHOSTS = ["#ff0000", "#ffb8ff", "#00ffff", "#ffb852"];
+// The four ghosts keep their arcade colours; who is wearing them changes with
+// the player you pick.
+const GHOST_COLOURS = ["#ff0000", "#ffb8ff", "#00ffff", "#ffb852"];
+
+/**
+ * Five characters, five slots: whoever you play as becomes Pac-Man and the
+ * other four take the ghost colours. Each is told apart by what sits on their
+ * head, not by a name.
+ */
+type Topper = "long" | "cap" | "pony" | "bob" | "ears";
+type Member = { topper: Topper; hair: string };
+const FAMILY: Member[] = [
+  { topper: "long", hair: "#8a3a1e" },
+  { topper: "cap", hair: "#2f6df0" },
+  { topper: "pony", hair: "#5b3520" },
+  { topper: "bob", hair: "#c98a3c" },
+  { topper: "ears", hair: "#bd8c4e" },
+];
 
 type Dir = 0 | 1 | 2 | 3; // right, down, left, up
 const DX = [1, 0, -1, 0];
@@ -67,6 +84,7 @@ type Actor = {
 
 type Ghost = Actor & {
   colour: string;
+  member: Member;
   mode: "chase" | "scatter" | "fright" | "eyes";
   timer: number;
   scatterCol: number;
@@ -81,6 +99,61 @@ function isWall(col: number, row: number, doorIsWall: boolean): boolean {
   const ch = MAZE[row][c];
   if (ch === "-") return doorIsWall;
   return ch === "#";
+}
+
+/**
+ * The little bit of hair, cap or ears that says which of them this is. Sized
+ * off the head so it works on a ghost dome and on a Pac-Man disc alike.
+ */
+function topper(
+  ctx: CanvasRenderingContext2D,
+  left: number,
+  top: number,
+  size: number,
+  m: Member,
+  facing: Dir,
+) {
+  const px = (v: number) => Math.max(1, Math.round(v));
+  const L = Math.round(left);
+  const T = Math.round(top);
+  const band = px(size * 0.16);
+  const thin = px(size * 0.13);
+  ctx.fillStyle = m.hair;
+  const put = (x: number, y: number, w: number, h: number) =>
+    ctx.fillRect(L + Math.round(x), T + Math.round(y), px(w), px(h));
+
+  switch (m.topper) {
+    case "long":
+      put(size * 0.12, 0, size * 0.76, band);
+      put(size * 0.02, band, thin, size * 0.5);
+      put(size * 0.85, band, thin, size * 0.5);
+      break;
+    case "cap":
+      put(size * 0.1, 0, size * 0.8, band * 1.3);
+      put(facing === 2 ? -size * 0.16 : size * 0.78, band * 1.1, size * 0.38, thin);
+      break;
+    case "pony":
+      put(size * 0.12, 0, size * 0.76, band);
+      put(facing === 2 ? size * 0.84 : -size * 0.1, -size * 0.06, size * 0.26, size * 0.34);
+      break;
+    case "bob":
+      put(size * 0.08, 0, size * 0.84, band);
+      put(size * 0.02, band, thin, size * 0.3);
+      put(size * 0.85, band, thin, size * 0.3);
+      break;
+    case "ears":
+      // Two upright triangles, the way a chihuahua wears them.
+      for (const ex of [size * 0.06, size * 0.68]) {
+        const w = size * 0.26;
+        const h = size * 0.4;
+        const steps = Math.max(2, Math.round(h / 2));
+        for (let i = 0; i < steps; i++) {
+          const t = i / steps;
+          put(ex + (w * t) / 2, -h + i * (h / steps), w * (1 - t), h / steps + 1);
+        }
+      }
+      break;
+  }
 }
 
 export function createPacman(): CustomStage {
@@ -99,6 +172,10 @@ export function createPacman(): CustomStage {
   let dying = 0;
   let pops: Pop[] = [];
   let fruit = 0;
+  let playerIndex = 1;
+  /** Direction the viewer asked for, and how long since they last asked. */
+  let wanted: Dir | null = null;
+  let idle = 0;
 
   let pac: Actor = { col: 13, row: 23, off: 0.5, dir: 2, next: 2, speed: 0.09 };
   let ghosts: Ghost[] = [];
@@ -110,7 +187,10 @@ export function createPacman(): CustomStage {
 
   function resetActors() {
     pac = { col: 13, row: 23, off: 0.5, dir: 2, next: 2, speed: 0.085 };
-    ghosts = GHOSTS.map((colour, i) => ({
+    // Everyone who is not the player takes a ghost colour, in order.
+    const others = FAMILY.filter((_, i) => i !== playerIndex);
+    ghosts = GHOST_COLOURS.map((colour, i) => ({
+      member: others[i],
       col: [13, 11, 13, 15][i],
       row: [11, 14, 14, 14][i],
       off: 0.5,
@@ -251,6 +331,16 @@ export function createPacman(): CustomStage {
 
     score: () => points,
 
+    setPlayer(index: number) {
+      playerIndex = Math.max(0, Math.min(FAMILY.length - 1, index));
+      resetActors();
+    },
+
+    input(dir: Dir) {
+      wanted = dir;
+      idle = 0;
+    },
+
     step() {
       t++;
       if (dying > 0) {
@@ -262,7 +352,21 @@ export function createPacman(): CustomStage {
         return;
       }
 
-      advance(pac, true, pacTarget);
+      if (wanted !== null) {
+        idle++;
+        // Hand back to the attract mode if nobody has touched it for a while.
+        if (idle > 420) wanted = null;
+      }
+      advance(pac, true, () => {
+        if (wanted !== null) {
+          const nc = ((pac.col + DX[wanted]) % COLS + COLS) % COLS;
+          if (!isWall(nc, pac.row + DY[wanted], true)) return wanted;
+          // Keep going the current way until the requested turn opens up.
+          const kc = ((pac.col + DX[pac.dir]) % COLS + COLS) % COLS;
+          if (!isWall(kc, pac.row + DY[pac.dir], true)) return pac.dir;
+        }
+        return pacTarget();
+      });
 
       // Eat whatever is under him.
       if (dots[pac.row]?.[pac.col]) {
@@ -415,6 +519,7 @@ export function createPacman(): CustomStage {
             ctx.fillRect(Math.round(p.x + dx), Math.round(p.y + dy), 1, 1);
           }
         }
+        topper(ctx, p.x - r, p.y - r, r * 2, FAMILY[playerIndex], pac.dir);
       }
 
       // Ghosts.
@@ -442,6 +547,7 @@ export function createPacman(): CustomStage {
             ctx.fillRect(left + i * lw, top + size * 0.85, lw, up ? size * 0.15 : size * 0.07);
           }
         }
+        if (body) topper(ctx, left, top, size, g.member, g.dir);
         // Eyes.
         const ex = DX[g.dir] * r * 0.2;
         const ey = DY[g.dir] * r * 0.2;

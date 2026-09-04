@@ -33,6 +33,10 @@ export type CustomStage = {
   step(): void;
   draw(f: Frame): void;
   score(): number;
+  /** Which family member the viewer is playing as, 0-3. */
+  setPlayer?(index: number): void;
+  /** A direction pressed or swiped by the viewer: 0 right, 1 down, 2 left, 3 up. */
+  input?(dir: 0 | 1 | 2 | 3): void;
 };
 
 export type Theme = {

@@ -66,15 +66,21 @@ type Fx = {
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const choice = <T,>(a: readonly T[]): T => a[Math.floor(Math.random() * a.length)];
 
-export type BrawlHandle = { destroy: () => void };
+export type BrawlHandle = { destroy: () => void; setPlayer: (index: number) => void };
 
 export function mountBrawl(
   canvas: HTMLCanvasElement,
   themes: Theme[],
-  opts: { rotateFrames?: number; compact?: boolean; warmup?: number } = {},
+  opts: {
+    rotateFrames?: number;
+    compact?: boolean;
+    warmup?: number;
+    player?: number;
+    onTheme?: (id: string) => void;
+  } = {},
 ): BrawlHandle {
   const ctx2d = canvas.getContext("2d", { alpha: false });
-  if (!ctx2d) return { destroy: () => {} };
+  if (!ctx2d) return { destroy: () => {}, setPlayer: () => {} };
   const ctx: CanvasRenderingContext2D = ctx2d;
   ctx.imageSmoothingEnabled = false;
 
@@ -121,6 +127,7 @@ export function mountBrawl(
 
   let custom: CustomStage | null = null;
   let customFor = "";
+  let player = opts.player ?? 1;
 
   let dogState: "trot" | "leap" | "bark" = "trot";
   let dogTimer = 0;
@@ -146,6 +153,7 @@ export function mountBrawl(
         custom = theme.custom();
         customFor = theme.id;
       }
+      custom.setPlayer?.(player);
       custom.reset(W, H);
       foes = [];
       shots = [];
@@ -822,6 +830,7 @@ export function mountBrawl(
         if (wipe === Math.round(WIPE_LEN / 2)) {
           themeIdx = (themeIdx + 1) % themes.length;
           theme = themes[themeIdx];
+          opts.onTheme?.(theme.id);
           buildParty();
           cam = 0;
         }
@@ -836,9 +845,38 @@ export function mountBrawl(
     raf = requestAnimationFrame(loop);
   }
 
+  opts.onTheme?.(theme.id);
   resize();
   if (reduced) render();
   else raf = requestAnimationFrame(loop);
+
+  const KEYS: Record<string, 0 | 1 | 2 | 3> = {
+    ArrowRight: 0, ArrowDown: 1, ArrowLeft: 2, ArrowUp: 3,
+    d: 0, s: 1, a: 2, w: 3, D: 0, S: 1, A: 2, W: 3,
+  };
+  const onKey = (e: KeyboardEvent) => {
+    const dir = KEYS[e.key];
+    if (dir === undefined || !custom?.input) return;
+    e.preventDefault();
+    custom.input(dir);
+  };
+  window.addEventListener("keydown", onKey, { passive: false });
+
+  let touchX = 0;
+  let touchY = 0;
+  const onTouchStart = (e: TouchEvent) => {
+    touchX = e.changedTouches[0].clientX;
+    touchY = e.changedTouches[0].clientY;
+  };
+  const onTouchEnd = (e: TouchEvent) => {
+    if (!custom?.input) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    const dy = e.changedTouches[0].clientY - touchY;
+    if (Math.abs(dx) < 18 && Math.abs(dy) < 18) return;
+    custom.input(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 0 : 2) : dy > 0 ? 1 : 3);
+  };
+  canvas.addEventListener("touchstart", onTouchStart, { passive: true });
+  canvas.addEventListener("touchend", onTouchEnd, { passive: true });
 
   const onVis = () => {
     if (document.hidden) {
@@ -854,10 +892,17 @@ export function mountBrawl(
   ro.observe(canvas);
 
   return {
+    setPlayer(index: number) {
+      player = index;
+      custom?.setPlayer?.(index);
+    },
     destroy() {
       running = false;
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("keydown", onKey);
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchend", onTouchEnd);
       ro.disconnect();
     },
   };
