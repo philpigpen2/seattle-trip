@@ -49,8 +49,14 @@
   collision, pits, question blocks that pay out once, goombas and koopas that squash.
   Hold left/right to run, up to jump. The family runs as a line and stops when you stop —
   which is right for a platformer, unlike Pac-Man where he carries straight on.
-- Pac-Man and Mario are playable (`PLAYABLE` in `Landing.tsx`); the four brawlers still
-  play themselves.
+- **All six are playable.** The four brawlers are steered through the engine's own brawl
+  loop: arrows move the taken hero sideways and in depth (`Hero.ox` + `lane`), and
+  space / Z / X or the on-screen **A** button swings. A taken hero never auto-attacks.
+  Pac-Man and Mario run their own simulations.
+- The cabinet controls fade to low opacity after ~3s and wake on any pointer, key or
+  touch, so the game keeps the screen.
+- The slim marquee is **Pac-Man only**. Applying it to every played game put the page
+  title straight over the corners the brawlers use for score and energy bars.
 - A `custom` stage draws its own world; the engine still calls `theme.hud` over the top, so
   Mario keeps the MARIO/COIN/WORLD/TIME bar and Pac-Man draws its own readout instead.
 
