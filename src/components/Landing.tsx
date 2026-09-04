@@ -1,11 +1,11 @@
 import Link from "next/link";
 import ArcadeStage from "./ArcadeStage";
 
-export default function Landing() {
+export default function Landing({ game }: { game?: string }) {
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[#0a0b23]">
       <div className="absolute inset-0">
-        <ArcadeStage />
+        <ArcadeStage theme={game} />
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col items-center px-5 pt-[9vh] text-center">

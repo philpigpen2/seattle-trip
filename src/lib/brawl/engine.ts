@@ -639,6 +639,7 @@ export function mountBrawl(
     if (document.hidden) {
       cancelAnimationFrame(raf);
     } else if (running && !reduced) {
+      cancelAnimationFrame(raf);
       raf = requestAnimationFrame(loop);
     }
   };

@@ -6,17 +6,22 @@ import Landing from "@/components/Landing";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const { userId } = await auth();
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ game?: string }>;
+}) {
+  const [{ userId }, { game }] = await Promise.all([auth(), searchParams]);
 
   // Signed out: the arcade attract screen is the whole site.
-  if (!userId) return <Landing />;
+  // ?game=street|mario|goldenaxe|ghosts|contra pins one instead of rotating.
+  if (!userId) return <Landing game={game} />;
 
   // Signed in: the apps.
   return (
     <main className="min-h-screen bg-white">
       <div className="relative h-40 w-full overflow-hidden border-b border-gray-200 sm:h-52">
-        <ArcadeStage compact />
+        <ArcadeStage compact theme={game} />
         <div className="pointer-events-none absolute inset-0 flex items-end p-4 sm:p-6">
           <h1 className="font-arcade text-[clamp(12px,3vw,22px)] text-[#ffe9a8] [text-shadow:2px_2px_0_#c0392b,4px_4px_0_#2a0f22]">
             PHIL LANEY
