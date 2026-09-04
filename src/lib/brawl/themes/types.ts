@@ -18,6 +18,7 @@ export type HudState = {
   lives: number;
   magic: number;
   timer: number;
+  coins: number;
   /** 0..1 per hero, in cast order. */
   health: number[];
   labels: readonly string[];
@@ -33,6 +34,8 @@ export type CustomStage = {
   step(): void;
   draw(f: Frame): void;
   score(): number;
+  /** Coins picked up, for the games that count them. */
+  coins?(): number;
   /** Which family member the viewer is playing as, 0-3. */
   setPlayer?(index: number): void;
   /** A direction the viewer is holding: 0 right, 1 down, 2 left, 3 up. */

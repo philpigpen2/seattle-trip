@@ -4,9 +4,12 @@
 export default function DPad({
   onDir,
   onRelease,
+  onAction,
 }: {
   onDir: (dir: 0 | 1 | 2 | 3) => void;
   onRelease: () => void;
+  /** The attack button, for the games that have one. */
+  onAction?: () => void;
 }) {
   const btn =
     "flex h-10 w-10 touch-none select-none items-center justify-center bg-[#12122e]/90 text-[#ffd166] ring-2 ring-[#2a2a5c] active:bg-[#ffd166] active:text-[#12122e]";
@@ -27,7 +30,21 @@ export default function DPad({
     onPointerLeave: lift,
   };
   return (
-    <div className="pointer-events-auto grid grid-cols-3 grid-rows-3 gap-1" aria-hidden="false">
+    <div className="pointer-events-auto flex items-end gap-2">
+      {onAction && (
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onAction();
+          }}
+          aria-label="Attack"
+          className="mb-1 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full bg-[#e6483d] font-arcade text-[11px] text-white ring-2 ring-[#ffd166] active:bg-[#ffd166] active:text-[#12122e]"
+        >
+          A
+        </button>
+      )}
+    <div className="grid grid-cols-3 grid-rows-3 gap-1">
       <span />
       <button type="button" className={btn} onPointerDown={press(3)} {...held} aria-label="Up">
         &#9650;
@@ -45,6 +62,7 @@ export default function DPad({
         &#9660;
       </button>
       <span />
+    </div>
     </div>
   );
 }

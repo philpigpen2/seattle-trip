@@ -25,7 +25,7 @@ export const mario: Theme = {
     const cw = [4, 3, 1, 3][step];
     rect(f, cols[1] + 2 - Math.floor(cw / 2), y + 9, cw, 7, GOLD[0]);
     rect(f, cols[1] + 2 - Math.floor(cw / 2), y + 9, cw, 1, "#fce0a0");
-    hudText(f, "X07", cols[1] + 8, y + 9, WHITE);
+    hudText(f, "X" + String(s.coins).padStart(2, "0"), cols[1] + 8, y + 9, WHITE);
 
     hudText(f, "WORLD", cols[2], y, WHITE);
     hudText(f, "1-1", cols[2] + 9, y + 9, WHITE);

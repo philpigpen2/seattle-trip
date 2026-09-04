@@ -20,6 +20,8 @@ type Hero = {
   ink: string;
   k: number;
   health: number;
+  /** Sideways offset from their walking position, when steered by hand. */
+  ox: number;
 };
 
 type Foe = {
@@ -71,6 +73,7 @@ export type BrawlHandle = {
   setPlayer: (index: number) => void;
   input: (dir: 0 | 1 | 2 | 3) => void;
   release: () => void;
+  action: () => void;
 };
 
 export function mountBrawl(
@@ -85,7 +88,8 @@ export function mountBrawl(
   } = {},
 ): BrawlHandle {
   const ctx2d = canvas.getContext("2d", { alpha: false });
-  if (!ctx2d) return { destroy: () => {}, setPlayer: () => {}, input: () => {}, release: () => {} };
+  if (!ctx2d)
+    return { destroy: () => {}, setPlayer: () => {}, input: () => {}, release: () => {}, action: () => {} };
   const ctx: CanvasRenderingContext2D = ctx2d;
   ctx.imageSmoothingEnabled = false;
 
@@ -133,6 +137,13 @@ export function mountBrawl(
   let custom: CustomStage | null = null;
   let customFor = "";
   let player = opts.player ?? 1;
+
+  // Hand control of one of the heroes.
+  let taken = false;
+  const heldDirs = new Set<0 | 1 | 2 | 3>();
+  let wantAttack = false;
+
+  const heroX = (h: Hero) => h.baseX + h.ox;
 
   let dogState: "trot" | "leap" | "bark" = "trot";
   let dogTimer = 0;
@@ -185,6 +196,7 @@ export function mountBrawl(
       ink: theme.heroes[i].band ?? theme.heroes[i].pal.shirt,
       k: HERO_SCALE[i],
       health: 1,
+      ox: 0,
     }));
     foes = [];
     shots = [];
@@ -343,7 +355,7 @@ export function mountBrawl(
 
   function fire(h: Hero, f: Frame) {
     const y = laneY(f, h.lane) - Math.round(18 * h.k);
-    const x = h.baseX + 20;
+    const x = heroX(h) + 20;
     if (theme.style === "throw") {
       shots.push({ x, y, vx: 3, vy: 0, spin: 0, angle: 0, kind: "lance", life: 0 });
       return;
@@ -366,14 +378,14 @@ export function mountBrawl(
 
   function step(f: Frame) {
     t++;
-    if (t % 24 === 0 && clock > 0) clock--;
+    if (t % 24 === 0) clock = clock > 0 ? clock - 1 : 400;
     if (custom) {
       custom.step();
       return;
     }
     cam += theme.scroll;
     if (shake > 0) shake = Math.max(0, shake - 0.35);
-    if (t % 24 === 0 && clock > 0) clock--;
+    if (t % 24 === 0) clock = clock > 0 ? clock - 1 : 400;
 
     if (theme.special) {
       if (specialPhase > 0) {
@@ -396,9 +408,37 @@ export function mountBrawl(
       }
     }
 
-    for (const h of heroes) {
+    for (let hi = 0; hi < heroes.length; hi++) {
+      const h = heroes[hi];
       h.health = Math.min(1, h.health + 0.0009);
+      const mine = taken && hi === player;
+      if (mine) {
+        // Steered by hand: only what is asked for, and never an auto-swing.
+        const speed = 1.5;
+        if (heldDirs.has(0)) h.ox = Math.min(W * 0.42, h.ox + speed);
+        if (heldDirs.has(2)) h.ox = Math.max(-h.baseX + 14, h.ox - speed);
+        if (heldDirs.has(1)) h.lane = Math.min(1, h.lane + 0.022);
+        if (heldDirs.has(3)) h.lane = Math.max(0, h.lane - 0.022);
+        if (h.state === "walk" && wantAttack && h.cool === 0) {
+          h.state =
+            theme.style === "blade"
+              ? "slash"
+              : theme.style === "stomp"
+                ? "hop"
+                : theme.style === "shoot" || theme.style === "throw"
+                  ? "punch"
+                  : Math.random() > 0.6
+                    ? "kick"
+                    : "punch";
+          h.timer = 0;
+        }
+        wantAttack = false;
+      }
       if (h.state === "walk") {
+        if (mine) {
+          if (h.cool > 0) h.cool--;
+          continue;
+        }
         if (h.cool > 0) h.cool--;
         const hy = laneY(f, h.lane);
         if (h.cool === 0) {
@@ -408,8 +448,8 @@ export function mountBrawl(
             (foe) =>
               foe.state === "walk" &&
               Math.abs(foe.y - hy) < (theme.staging === "flat" ? 40 : ranged ? 13 : 9) &&
-              foe.x - h.baseX > 10 &&
-              foe.x - h.baseX < reach,
+              foe.x - heroX(h) > 10 &&
+              foe.x - heroX(h) < reach,
           );
           if (target) {
             h.state =
@@ -438,11 +478,12 @@ export function mountBrawl(
             fire(h, f);
           } else {
             const hy = laneY(f, h.lane);
+            const hx = heroX(h);
             const reach = h.state === "slash" ? 44 : h.state === "hop" ? 30 : h.state === "kick" ? 34 : 30;
             for (const foe of foes) {
               if (foe.state !== "walk" && foe.state !== "hurt") continue;
               if (theme.staging !== "flat" && Math.abs(foe.y - hy) > 12) continue;
-              if (foe.x - h.baseX > 2 && foe.x - h.baseX < reach) {
+              if (foe.x - hx > 2 && foe.x - hx < reach) {
                 hitFoe(foe, h.state === "kick" ? 0.9 : h.state === "slash" ? 1.2 : 0.4, h.state === "hop");
                 break;
               }
@@ -458,7 +499,7 @@ export function mountBrawl(
 
     // Delaney
     dogTimer++;
-    const dogHomeX = heroes[1].baseX + 30;
+    const dogHomeX = heroX(heroes[1]) + 30;
     if (dogState === "trot") {
       const dy = laneY(f, 0.62);
       const near = foes.find(
@@ -499,8 +540,8 @@ export function mountBrawl(
           (h) =>
             h.state !== "hurt" &&
             (theme.staging === "flat" || Math.abs(laneY(f, h.lane) - foe.y) < 10) &&
-            foe.x - h.baseX < 12 &&
-            foe.x - h.baseX > -6,
+            foe.x - heroX(h) < 12 &&
+            foe.x - heroX(h) > -6,
         );
         if (victim) {
           victim.state = "hurt";
@@ -603,7 +644,7 @@ export function mountBrawl(
       const hop = h.state === "hop" ? -Math.sin((h.timer / 30) * Math.PI) * 20 : 0;
       const lunge = h.state === "hop" ? (h.timer / 30) * 12 : h.state === "hurt" ? -3 : 0;
       const bobX = h.state === "walk" ? Math.sin((t + h.phase * 9) / 26) * 1.4 : 0;
-      const x = h.baseX + bobX + lunge;
+      const x = heroX(h) + bobX + lunge;
       const { pose, frame: fr } = heroPose(h);
       actors.push({
         y,
@@ -636,7 +677,7 @@ export function mountBrawl(
     }
 
     const dy = laneY(f, 0.62);
-    const dx = heroes[1].baseX + 30 + dogLunge;
+    const dx = heroX(heroes[1]) + 30 + dogLunge;
     actors.push({
       y: dy,
       draw: () =>
@@ -800,6 +841,7 @@ export function mountBrawl(
         lives: 3,
         magic,
         timer: clock,
+        coins: custom.coins?.() ?? 0,
         health: [1, 1, 1, 1],
         labels: ["1P", "2P", "3P", "4P"],
         inks: ["#ffffff", "#ffffff", "#ffffff", "#ffffff"],
@@ -831,6 +873,7 @@ export function mountBrawl(
       lives: 3,
       magic,
       timer: clock,
+      coins: 0,
       health: heroes.map((h) => h.health),
       labels: ["1P", "2P", "3P", "4P"],
       inks: heroes.map((h) => h.ink),
@@ -879,16 +922,33 @@ export function mountBrawl(
   const down = new Set<string>();
   const onKey = (e: KeyboardEvent) => {
     const dir = dirFor(e.key);
-    if (dir === undefined || !custom?.input) return;
+    if (dir === undefined) return;
     e.preventDefault();
     down.add(e.key);
-    custom.input(dir);
+    if (custom) custom.input?.(dir);
+    else {
+      taken = true;
+      heldDirs.add(dir);
+    }
   };
   const onKeyUp = (e: KeyboardEvent) => {
-    if (dirFor(e.key) === undefined) return;
+    const dir = dirFor(e.key);
+    if (dir === undefined) return;
     down.delete(e.key);
+    heldDirs.delete(dir);
     if (down.size === 0) custom?.release?.();
   };
+  const ATTACK = new Set([" ", "z", "x", "Enter", "Z", "X"]);
+  const onAttack = (e: KeyboardEvent) => {
+    if (!ATTACK.has(e.key)) return;
+    e.preventDefault();
+    if (custom) custom.input?.(3);
+    else {
+      taken = true;
+      wantAttack = true;
+    }
+  };
+  window.addEventListener("keydown", onAttack, { passive: false });
   window.addEventListener("keydown", onKey, { passive: false });
   window.addEventListener("keyup", onKeyUp);
 
@@ -933,10 +993,28 @@ export function mountBrawl(
       custom?.setPlayer?.(index);
     },
     input(dir: 0 | 1 | 2 | 3) {
-      custom?.input?.(dir);
+      if (custom) {
+        custom.input?.(dir);
+        return;
+      }
+      taken = true;
+      heldDirs.clear();
+      heldDirs.add(dir);
     },
     release() {
-      custom?.release?.();
+      if (custom) {
+        custom.release?.();
+        return;
+      }
+      heldDirs.clear();
+    },
+    action() {
+      if (custom) {
+        custom.input?.(3);
+        return;
+      }
+      taken = true;
+      wantAttack = true;
     },
     destroy() {
       running = false;
@@ -944,6 +1022,7 @@ export function mountBrawl(
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("keydown", onAttack);
       canvas.removeEventListener("touchstart", onTouchStart);
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
