@@ -28,9 +28,10 @@ export type HairStyle =
   | "helm"
   | "hood"
   | "cap"
+  | "bandana"
   | "skull";
 
-export type Weapon = "none" | "sword" | "axe" | "staff" | "club" | "gun";
+export type Weapon = "none" | "sword" | "axe" | "staff" | "club" | "gun" | "sai" | "nunchaku";
 
 export type Pose = "walk" | "punch" | "kick" | "slash" | "hurt" | "ko" | "idle" | "cheer";
 
@@ -41,6 +42,11 @@ export type Fighter = {
   cape?: string;
   skirt?: boolean;
   big?: boolean;
+  moustache?: boolean;
+  plume?: string;
+  /** Turtle plastron and shell rim. */
+  shell?: string;
+  band?: string;
 };
 
 type Rect = [number, number, number, number, string];
@@ -65,6 +71,10 @@ function head(o: Rect[], f: Fighter, dx: number, dy: number) {
   o.push([5 + dx, 7 + dy, 6, 1, p.skinShade]);
   o.push([9 + dx, 4 + dy, 1, 2, DARK]); // eye
   o.push([10 + dx, 6 + dy, 1, 1, p.skinShade]); // jaw
+  if (f.moustache) {
+    o.push([8 + dx, 6 + dy, 4, 2, p.hair]);
+    o.push([11 + dx, 5 + dy, 1, 1, p.hair]);
+  }
 
   switch (f.hair) {
     case "short":
@@ -109,6 +119,10 @@ function head(o: Rect[], f: Fighter, dx: number, dy: number) {
       o.push([5 + dx, 1 + dy, 6, 1, p.skinShade]);
       break;
     case "helm":
+      if (f.plume) {
+        o.push([5 + dx, -6 + dy, 6, 3, f.plume]);
+        o.push([4 + dx, -4 + dy, 3, 4, f.plume]);
+      }
       o.push([4 + dx, 0 + dy, 8, 4, p.accent]);
       o.push([4 + dx, 0 + dy, 8, 1, p.shirt2]);
       o.push([4 + dx, 4 + dy, 2, 4, p.accent]);
@@ -122,6 +136,17 @@ function head(o: Rect[], f: Fighter, dx: number, dy: number) {
       o.push([10 + dx, 3 + dy, 4, 1, p.hair2]);
       o.push([4 + dx, 3 + dy, 1, 3, p.hair]);
       break;
+    case "bandana": {
+      const band = f.band ?? p.accent;
+      o.push([5 + dx, 1 + dy, 6, 2, p.skin]);
+      o.push([4 + dx, 3 + dy, 8, 3, band]);
+      o.push([9 + dx, 4 + dy, 2, 1, "#ffffff"]);
+      o.push([6 + dx, 4 + dy, 1, 1, "#ffffff"]);
+      o.push([1 + dx, 3 + dy, 3, 2, band]);
+      o.push([0 + dx, 5 + dy, 2, 3, band]);
+      o.push([2 + dx, 6 + dy, 2, 3, band]);
+      break;
+    }
     case "hood":
       o.push([3 + dx, -1 + dy, 10, 5, p.shirt]);
       o.push([3 + dx, 4 + dy, 2, 7, p.shirt]);
@@ -169,6 +194,13 @@ function torso(o: Rect[], f: Fighter, dx: number, dy: number) {
   o.push([5 + dx, 12 + dy, 6, 1, p.accent]);
   o.push([4 + dx, 18 + dy, 8, 2, p.belt]);
   o.push([7 + dx, 18 + dy, 2, 2, p.accent]);
+  if (f.shell) {
+    o.push([3 + dx, 9 + dy, 1, 10, p.shirt2]);
+    o.push([5 + dx, 10 + dy, 7, 8, f.shell]);
+    o.push([5 + dx, 10 + dy, 7, 1, "#ffffff"]);
+    o.push([6 + dx, 13 + dy, 5, 1, p.belt]);
+    o.push([6 + dx, 16 + dy, 5, 1, p.belt]);
+  }
   if (f.skirt) {
     o.push([3 + dx, 19 + dy, 10, 3, p.shirt]);
     o.push([3 + dx, 21 + dy, 10, 1, p.shirt2]);
@@ -282,6 +314,43 @@ function weapon(o: Rect[], f: Fighter, grip: Grip, dx = 0, dy = 0) {
       put(12, 6, 2, 10, gun);
       put(13, 6, 1, 10, gun2);
       put(11, 12, 4, 2, gun);
+    }
+    return;
+  }
+
+  if (w === "sai") {
+    const steel = "#d8dce8";
+    const steel2 = "#8b93a8";
+    if (grip === "down" || grip === "mid") {
+      put(13, 12, 3, 2, "#2a2233");
+      put(16, 12, 8, 2, steel);
+      put(16, 13, 8, 1, steel2);
+      put(17, 10, 1, 3, steel2);
+      put(17, 14, 1, 3, steel2);
+    } else {
+      put(12, 14, 2, 3, "#2a2233");
+      put(12, 6, 2, 8, steel);
+      put(13, 6, 1, 8, steel2);
+      put(10, 8, 1, 3, steel2);
+      put(14, 8, 1, 3, steel2);
+    }
+    return;
+  }
+
+  if (w === "nunchaku") {
+    const wood2 = "#5c3a1c";
+    if (grip === "down" || grip === "mid") {
+      put(13, 12, 6, 2, wood2);
+      put(19, 13, 2, 1, "#9aa0ac");
+      put(21, 9, 2, 6, wood2);
+    } else if (grip === "raise") {
+      put(11, 2, 2, 6, wood2);
+      put(12, 8, 1, 2, "#9aa0ac");
+      put(9, 9, 5, 2, wood2);
+    } else {
+      put(12, 10, 2, 6, wood2);
+      put(13, 16, 1, 2, "#9aa0ac");
+      put(11, 18, 4, 2, wood2);
     }
     return;
   }
@@ -413,6 +482,37 @@ function buildRects(f: Fighter, pose: Pose, frame: number): Rect[] {
 
 /* ------------------------------------------------------------------ paint - */
 
+/**
+ * Paints a rect list. `k` scales the whole figure by resampling rectangle
+ * edges rather than pixels, so a child-sized fighter still has 1px detail
+ * and no seams.
+ */
+function paint(
+  ctx: CanvasRenderingContext2D,
+  rects: Rect[],
+  bx: number,
+  by: number,
+  flip: boolean,
+  tint: string | undefined,
+  k: number,
+  anchorX: number,
+  anchorY: number,
+) {
+  const ax = Math.round(anchorX * k);
+  const ay = Math.round(anchorY * k);
+  for (const [lx, ly, lw, lh, c] of rects) {
+    const x0 = Math.round(lx * k);
+    const x1 = Math.round((lx + lw) * k);
+    const y0 = Math.round(ly * k);
+    const y1 = Math.round((ly + lh) * k);
+    const w = Math.max(1, x1 - x0);
+    const h = Math.max(1, y1 - y0);
+    const sx = flip ? bx + ax - x0 - w : bx - ax + x0;
+    ctx.fillStyle = tint ?? c;
+    ctx.fillRect(sx, by - ay + y0, w, h);
+  }
+}
+
 export function drawFighter(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -422,31 +522,31 @@ export function drawFighter(
   frame: number,
   flip: boolean,
   tint?: string,
+  k = 1,
 ): void {
-  const rects = buildRects(f, pose, frame);
-  const cape = f.cape;
   const bx = Math.round(x);
   const by = Math.round(y);
 
-  if (cape && pose !== "ko") {
+  if (f.cape && pose !== "ko") {
     const sway = (frame & 1) === 1 ? 1 : 0;
-    const cr: Rect[] = [
-      [1 - sway, 9, 4, 12, cape],
-      [0 - sway, 12, 2, 7, cape],
-      [4, 8, 8, 2, cape],
-    ];
-    for (const [lx, ly, lw, lh, c] of cr) {
-      const sx = flip ? bx + 8 - lx - lw : bx - 8 + lx;
-      ctx.fillStyle = tint ?? c;
-      ctx.fillRect(sx, by - 30 + ly, lw, lh);
-    }
+    paint(
+      ctx,
+      [
+        [1 - sway, 9, 4, 12, f.cape],
+        [0 - sway, 12, 2, 7, f.cape],
+        [4, 8, 8, 2, f.cape],
+      ],
+      bx,
+      by,
+      flip,
+      tint,
+      k,
+      8,
+      30,
+    );
   }
 
-  for (const [lx, ly, lw, lh, c] of rects) {
-    const sx = flip ? bx + 8 - lx - lw : bx - 8 + lx;
-    ctx.fillStyle = tint ?? c;
-    ctx.fillRect(sx, by - 30 + ly, lw, lh);
-  }
+  paint(ctx, buildRects(f, pose, frame), bx, by, flip, tint, k, 8, 30);
 }
 
 /* -------------------------------------------------------------------- dog - */
@@ -470,53 +570,174 @@ export function drawDog(
   pose: DogPose,
   frame: number,
   flip: boolean,
+  k = 1,
 ): void {
   const o: Rect[] = [];
   const bob = pose === "trot" && (frame & 1) === 1 ? 1 : 0;
-  const lift = pose === "leap" ? 1 : 0;
+  const lift = pose === "leap" ? 2 : 0;
 
-  // Body + tail
-  o.push([2, 3 + bob, 9, 5, d.fur]);
-  o.push([2, 3 + bob, 9, 1, d.fur2]);
-  o.push([0, 1 + bob - (frame & 1), 3, 2, d.fur]);
-  o.push([0, 0 + bob - (frame & 1), 2, 2, d.fur2]);
+  // Chihuahua crossed with a dachshund: long and low, on very short legs,
+  // with ears far too big for her.
+  o.push([2, 4 + bob, 11, 4, d.fur]);
+  o.push([2, 4 + bob, 11, 1, d.fur2]);
+  o.push([11, 5 + bob, 3, 3, d.fur]);
 
-  // Head
-  o.push([9, 0 + bob - lift, 5, 5, d.fur]);
-  o.push([13, 2 + bob - lift, 2, 2, d.fur2]);
-  o.push([14, 2 + bob - lift, 1, 1, d.nose]);
-  o.push([11, 1 + bob - lift, 1, 1, "#1a1020"]);
-  o.push([8, 0 + bob - lift, 2, 4, d.fur2]); // floppy ear
-  if (pose === "bark") o.push([14, 3 + bob, 1, 1, "#ffffff"]);
+  // Tail, up and curling.
+  const wag = frame & 1 ? 1 : 0;
+  o.push([0, 3 + bob - wag, 2, 2, d.fur]);
+  o.push([0, 1 + bob - wag, 1, 2, d.fur2]);
+  o.push([1, 0 + bob - wag, 1, 1, d.fur2]);
+
+  // Head, long snout, big upright ears.
+  const hy = bob - lift;
+  o.push([11, 1 + hy, 5, 4, d.fur]);
+  o.push([12, 0 + hy, 3, 1, d.fur]);
+  o.push([15, 3 + hy, 3, 2, d.fur2]);
+  o.push([18, 3 + hy, 1, 1, d.nose]);
+  o.push([14, 2 + hy, 1, 1, "#1a1020"]);
+  o.push([10, -3 + hy, 2, 5, d.fur2]);
+  o.push([10, -4 + hy, 1, 2, d.fur2]);
+  o.push([13, -4 + hy, 2, 5, d.fur]);
+  o.push([14, -5 + hy, 1, 2, d.fur]);
+  if (pose === "bark") {
+    o.push([16, 5 + hy, 2, 1, "#ffffff"]);
+  }
   if (d.hat) {
-    o.push([9, -2 + bob - lift, 5, 2, d.hat]);
-    o.push([10, -3 + bob - lift, 2, 1, d.hat]);
+    o.push([11, -2 + hy, 5, 2, d.hat]);
+    o.push([12, -3 + hy, 2, 1, d.hat]);
   }
 
-  // Collar
-  o.push([8, 3 + bob, 1, 4, d.collar]);
+  o.push([10, 4 + bob, 1, 4, d.collar]);
 
-  // Legs
+  // Four very short legs.
   if (pose === "leap") {
-    o.push([9, 8 + bob, 4, 2, d.fur]);
-    o.push([1, 7 + bob, 4, 2, d.fur]);
+    o.push([11, 8 + bob, 4, 2, d.fur]);
+    o.push([1, 7 + bob, 4, 2, d.fur2]);
   } else if (pose === "sit") {
-    o.push([9, 8, 2, 3, d.fur]);
-    o.push([2, 7, 4, 4, d.fur]);
+    o.push([11, 8, 2, 3, d.fur]);
+    o.push([2, 6, 4, 5, d.fur2]);
   } else {
     const a = frame & 1 ? 1 : -1;
-    o.push([9 + a, 8 + bob, 2, 3 - bob, d.fur]);
-    o.push([6 - a, 8 + bob, 2, 3 - bob, d.fur2]);
+    o.push([11 + a, 8 + bob, 2, 3 - bob, d.fur]);
+    o.push([8 - a, 8 + bob, 2, 3 - bob, d.fur2]);
     o.push([4 + a, 8 + bob, 2, 3 - bob, d.fur]);
-    o.push([1 - a, 8 + bob, 2, 3 - bob, d.fur2]);
+    o.push([2 - a, 8 + bob, 2, 3 - bob, d.fur2]);
   }
 
-  const bx = Math.round(x);
-  const by = Math.round(y);
-  for (const [lx, ly, lw, lh, c] of o) {
-    if (lh <= 0) continue;
-    const sx = flip ? bx + 7 - lx - lw : bx - 7 + lx;
-    ctx.fillStyle = c;
-    ctx.fillRect(sx, by - 11 + ly, lw, lh);
+  paint(ctx, o.filter(([, , w, h]) => w > 0 && h > 0), Math.round(x), Math.round(y), flip, undefined, k, 8, 11);
+}
+
+
+/* --------------------------------------------------------------- critters - */
+
+export type CritterKind = "goomba" | "koopa" | "ghost";
+export type CritterPose = "walk" | "hurt" | "flat" | "ko";
+
+/**
+ * Enemies that are not people. Anchored at the middle of the feet, like a
+ * fighter, so the engine can place them the same way.
+ */
+export function drawCritter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  kind: CritterKind,
+  p: Palette,
+  pose: CritterPose,
+  frame: number,
+  flip: boolean,
+  tint?: string,
+  k = 1,
+): void {
+  const o: Rect[] = [];
+  const dark = "#1b1008";
+  const anchorX = 8;
+  let anchorY = 30;
+
+  if (kind === "ghost") {
+    // Dome, wavy skirt, and the eyes that follow you.
+    anchorY = 15;
+    const body = pose === "hurt" || pose === "flat" || pose === "ko" ? "#2121ff" : p.shirt;
+    const scared = body === "#2121ff";
+    o.push([4, 0, 8, 2, body]);
+    o.push([2, 2, 12, 3, body]);
+    o.push([1, 5, 14, 7, body]);
+    const w = frame & 1 ? 0 : 2;
+    for (let i = 0; i < 4; i++) {
+      o.push([1 + i * 4, 12, 2, 3 - ((i + w) % 2), body]);
+      o.push([3 + i * 4, 12, 2, 1 + ((i + w) % 2), body]);
+    }
+    if (scared) {
+      o.push([3, 5, 2, 2, "#ffffff"]);
+      o.push([9, 5, 2, 2, "#ffffff"]);
+      o.push([3, 9, 10, 1, "#ffffff"]);
+      o.push([4, 8, 2, 1, "#ffffff"]);
+      o.push([8, 8, 2, 1, "#ffffff"]);
+    } else {
+      o.push([2, 4, 4, 5, "#ffffff"]);
+      o.push([8, 4, 4, 5, "#ffffff"]);
+      o.push([2, 6, 2, 3, "#2121de"]);
+      o.push([8, 6, 2, 3, "#2121de"]);
+    }
+  } else if (kind === "goomba") {
+    anchorY = 15;
+    if (pose === "flat" || pose === "ko") {
+      o.push([1, 11, 15, 4, p.shirt]);
+      o.push([1, 11, 15, 1, p.shirt2]);
+      o.push([4, 12, 2, 1, dark]);
+      o.push([10, 12, 2, 1, dark]);
+      o.push([0, 13, 3, 2, p.pants]);
+      o.push([14, 13, 3, 2, p.pants]);
+    } else {
+      const squash = pose === "hurt" ? 1 : 0;
+      o.push([4, 0 + squash, 8, 1, p.shirt2]);
+      o.push([2, 1 + squash, 12, 1, p.shirt]);
+      o.push([1, 2 + squash, 14, 6 - squash, p.shirt]);
+      o.push([0, 4 + squash, 1, 4, p.shirt]);
+      o.push([15, 4 + squash, 1, 4, p.shirt]);
+      o.push([3, 1 + squash, 6, 1, p.shirt2]);
+      o.push([3, 7, 10, 4, p.skin]);
+      o.push([4, 4 + squash, 2, 4, "#ffffff"]);
+      o.push([10, 4 + squash, 2, 4, "#ffffff"]);
+      o.push([5, 5 + squash, 1, 2, dark]);
+      o.push([10, 5 + squash, 1, 2, dark]);
+      o.push([3, 3 + squash, 3, 1, dark]);
+      o.push([10, 3 + squash, 3, 1, dark]);
+      o.push([6, 9, 4, 1, dark]);
+      const step = frame & 1 ? 1 : -1;
+      o.push([1 + step, 11, 6, 4, p.pants]);
+      o.push([9 - step, 11, 6, 4, p.pants2]);
+    }
+  } else {
+    // Koopa: shell on the back, beak forward, orange feet.
+    anchorY = 26;
+    if (pose === "flat" || pose === "ko") {
+      o.push([2, 19, 12, 7, p.shirt]);
+      o.push([3, 19, 10, 2, p.shirt2]);
+      o.push([5, 22, 2, 2, p.shirt2]);
+      o.push([9, 22, 2, 2, p.shirt2]);
+      o.push([13, 21, 4, 5, p.skin]);
+      o.push([16, 23, 1, 1, p.skinShade]);
+      o.push([0, 21, 3, 4, p.skin]);
+      o.push([3, 25, 3, 1, p.pants]);
+      o.push([9, 25, 3, 1, p.pants]);
+    } else {
+      const bob = frame & 1 ? 1 : 0;
+      o.push([2, 8 + bob, 11, 13, p.shirt]);
+      o.push([3, 9 + bob, 9, 2, p.shirt2]);
+      o.push([3, 13 + bob, 3, 3, p.shirt2]);
+      o.push([8, 16 + bob, 3, 3, p.shirt2]);
+      o.push([11, 10 + bob, 5, 11, p.accent]); // belly plate
+      o.push([9, 1 + bob, 6, 7, p.skin]);
+      o.push([14, 4 + bob, 3, 3, p.skinShade]);
+      o.push([12, 3 + bob, 1, 2, dark]);
+      o.push([9, 0 + bob, 4, 1, p.skinShade]);
+      o.push([7, 11 + bob, 3, 3, p.skin]);
+      const step = frame & 1 ? 2 : -1;
+      o.push([4 + step, 21 + bob, 5, 4, p.pants]);
+      o.push([9 - step, 21 + bob, 5, 4, p.pants2]);
+    }
   }
+
+  paint(ctx, o.filter(([, , w, h]) => w > 0 && h > 0), Math.round(x), Math.round(y), flip, tint, k, anchorX, anchorY);
 }

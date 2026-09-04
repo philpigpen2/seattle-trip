@@ -1,6 +1,10 @@
 // Stage 3 — THE MOUNTAIN PATH. Golden Axe: sunset, ruins, skeleton knights.
 import { bandSky, hash, moon, rect, tile, type Frame } from "../bg";
+import { hudText, lives } from "../hud";
 import type { Theme } from "./types";
+
+const INK = "#f6c85a";
+const SHADOW = "#2a1020";
 
 function ridge(f: Frame, parallax: number, amp: number, base: number, color: string, seed: number) {
   const ctx = f.ctx;
@@ -18,13 +22,58 @@ function ridge(f: Frame, parallax: number, amp: number, base: number, color: str
 
 export const goldenaxe: Theme = {
   id: "goldenaxe",
-  game: "GOLDEN AXE",
-  stage: "STAGE 1 - THE PATH",
+  intro: ["STAGE 1", "THE PATH"],
   scroll: 0.5,
   style: "blade",
-  hitWords: ["SLASH!", "CLANG!", "KRUNCH!", "SHRAK!", "CLEAVE!"],
-  hudInk: "#f6c85a",
-  hudShadow: "#2a1020",
+  impact: "gleam",
+  ink: INK,
+  shadow: SHADOW,
+
+  // Score, spare lives, and the row of magic pots that decides how big the
+  // spell is when you finally cast it.
+  hud(f, s) {
+    const pad = 5;
+    hudText(f, "1P", pad, pad, INK, { shadow: SHADOW });
+    hudText(f, String(s.score).padStart(6, "0"), pad, pad + 9, "#f4ecd8", { shadow: SHADOW });
+    for (let i = 0; i < 6; i++) {
+      const x = pad + i * 6;
+      const y = pad + 20;
+      const filled = i < s.magic;
+      rect(f, x, y, 4, 6, filled ? "#3fa0e6" : "#26304a");
+      rect(f, x, y, 4, 1, filled ? "#9adcff" : "#33405f");
+      rect(f, x + 1, y - 2, 2, 2, "#8a6a3a");
+    }
+    lives(f, pad + 1, pad + 32, 3, "#e0503a");
+    hudText(f, "HI", f.W - pad, pad, INK, { align: "right", shadow: SHADOW });
+    hudText(f, String(s.hi).padStart(6, "0"), f.W - pad, pad + 9, "#f4ecd8", { align: "right", shadow: SHADOW });
+  },
+
+  // Casting magic: the screen goes up in fire and everything standing falls.
+  special: {
+    everyFrames: 760,
+    duration: 56,
+    render(f, p) {
+      // Hold the fire at full height for most of the cast.
+      const heat = Math.max(0, Math.min(1, Math.sin(p * Math.PI) * 1.9));
+      const ctx = f.ctx;
+      ctx.save();
+      ctx.globalAlpha = p < 0.12 ? 0.75 : 0.3 * heat;
+      ctx.fillStyle = p < 0.12 ? "#ffe9b0" : "#ff7a2a";
+      ctx.fillRect(0, 0, f.W, f.H);
+      ctx.restore();
+      const cols = 7;
+      for (let i = 0; i < cols; i++) {
+        const x = Math.round((f.W * (i + 0.5)) / cols + Math.sin(f.t / 9 + i) * 3);
+        const h = Math.max(4, Math.round(f.groundBottom * heat * (0.5 + ((i * 37) % 11) / 24)));
+        const base = f.groundBottom - 2;
+        for (let k = 0; k < h; k += 4) {
+          const w = Math.max(2, Math.round(11 - (k / h) * 8 + Math.sin((f.t + k) / 5 + i) * 1.6));
+          const c = k < h * 0.32 ? "#fff0b0" : k < h * 0.68 ? "#f6c85a" : "#e0521c";
+          rect(f, x - w / 2, base - k, w, 4, c);
+        }
+      }
+    },
+  },
 
   heroes: [
     {

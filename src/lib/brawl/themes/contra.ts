@@ -1,6 +1,10 @@
 // Stage 5 — THE JUNGLE BASE. Contra: palms, steel, tracer fire.
 import { bandSky, hash, rect, stars, tile } from "../bg";
+import { hudText } from "../hud";
 import type { Theme } from "./types";
+
+const INK = "#9ef0c0";
+const SHADOW = "#03181c";
 
 function palm(f: Parameters<Theme["far"]>[0], x: number, base: number, h: number, c: string, lean: number) {
   for (let i = 0; i < h; i++) {
@@ -8,24 +12,50 @@ function palm(f: Parameters<Theme["far"]>[0], x: number, base: number, h: number
   }
   const tx = x + lean;
   const ty = base - h;
-  rect(f, tx - 9, ty + 1, 9, 2, c);
-  rect(f, tx - 12, ty + 4, 5, 2, c);
-  rect(f, tx + 2, ty, 9, 2, c);
-  rect(f, tx + 9, ty + 3, 5, 2, c);
-  rect(f, tx - 5, ty - 3, 5, 2, c);
-  rect(f, tx + 1, ty - 4, 5, 2, c);
-  rect(f, tx - 1, ty - 1, 4, 2, c);
+  // Fronds droop away from the crown in stepped arcs.
+  for (const dir of [-1, 1]) {
+    for (let n = 0; n < 3; n++) {
+      const span = 8 + n * 3;
+      const drop = n * 2;
+      for (let k = 0; k < span; k++) {
+        const yy = ty - 2 + drop + Math.round((k * k) / (span * 1.6));
+        rect(f, tx + dir * (k + 1) - (dir < 0 ? 1 : 0), yy, 2, 2, c);
+      }
+    }
+  }
+  rect(f, tx - 2, ty - 3, 6, 3, c);
 }
 
 export const contra: Theme = {
   id: "contra",
-  game: "CONTRA",
-  stage: "STAGE 1 - THE JUNGLE",
+  intro: ["STAGE 1", "THE JUNGLE"],
   scroll: 0.6,
   style: "shoot",
-  hitWords: ["BLAM!", "BOOM!", "KABOOM!", "RATATAT!", "DAKKA!"],
-  hudInk: "#9ef0c0",
-  hudShadow: "#03181c",
+  impact: "boom",
+  ink: INK,
+  shadow: SHADOW,
+
+  // Score, spare lives as little soldiers, and the letter of the gun you are
+  // carrying — S is the spread.
+  hud(f, s) {
+    const pad = 5;
+    hudText(f, "1P", pad, pad, "#ff6b6b", { shadow: SHADOW });
+    hudText(f, String(s.score).padStart(6, "0"), pad, pad + 9, INK, { shadow: SHADOW });
+    for (let i = 0; i < 3; i++) {
+      const x = pad + i * 7;
+      const y = pad + 20;
+      rect(f, x + 1, y, 3, 3, "#f0b892");
+      rect(f, x, y + 3, 5, 4, "#e63946");
+      rect(f, x + 1, y + 7, 1, 2, "#3f4a2a");
+      rect(f, x + 3, y + 7, 1, 2, "#3f4a2a");
+    }
+    const on = Math.floor(s.t / 16) % 2 === 0;
+    rect(f, pad, pad + 32, 11, 11, on ? "#e0b83c" : "#8a6f20");
+    rect(f, pad + 1, pad + 33, 9, 9, "#1c242b");
+    hudText(f, "S", pad + 3, pad + 35, on ? "#fff3b0" : "#c8a83c");
+    hudText(f, "HI", f.W - pad, pad, "#ff6b6b", { align: "right", shadow: SHADOW });
+    hudText(f, String(s.hi).padStart(6, "0"), f.W - pad, pad + 9, INK, { align: "right", shadow: SHADOW });
+  },
 
   heroes: [
     {
@@ -176,10 +206,10 @@ export const contra: Theme = {
     // Steel walkway plates.
     tile(f, 16, 1, 20, (x) => {
       rect(f, x, top + 4, 15, f.groundBottom - top - 2, "#33503a");
-      f.ctx.fillStyle = "#243a2a";
+      f.ctx.fillStyle = "#2d4733";
       f.ctx.fillRect(Math.round(x + 15), top + 4, 1, f.groundBottom - top - 2);
-      rect(f, x + 2, top + 6, 1, 1, "#4e7350");
-      rect(f, x + 12, f.groundBottom - 4, 1, 1, "#4e7350");
+      rect(f, x + 2, top + 6, 1, 1, "#436645");
+      rect(f, x + 12, f.groundBottom - 4, 1, 1, "#436645");
     });
 
     // Crates and sandbags along the back.

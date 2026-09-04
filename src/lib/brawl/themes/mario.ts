@@ -1,6 +1,11 @@
 // Stage 2 — WORLD 1-1. Super Mario Bros: blue sky, hills, pipes, brick ground.
 import { hash, rect, tile } from "../bg";
+import { hudText } from "../hud";
+import { drawFighter } from "../sprites";
 import type { Theme } from "./types";
+
+const INK = "#ffffff";
+const SHADOW = "#1b1008";
 
 const SKY = "#5c94fc";
 const GREEN = "#00a800";
@@ -49,17 +54,41 @@ function cloud(f: Parameters<Theme["far"]>[0], x: number, y: number, s: number) 
 
 export const mario: Theme = {
   id: "mario",
-  game: "SUPER MARIO BROS",
-  stage: "WORLD 1-1",
+  intro: ["WORLD 1-1"],
   scroll: 0.62,
   style: "stomp",
-  hitWords: ["STOMP!", "BONK!", "WHAM!", "POW!", "BOING!"],
-  hudInk: "#ffffff",
-  hudShadow: "#1b1008",
+  impact: "points",
+  ink: INK,
+  shadow: SHADOW,
+
+  // The four-column status bar the whole world can recite.
+  hud(f, s) {
+    const y = 5;
+    const cols = [0.05, 0.32, 0.57, 0.81].map((c) => Math.round(f.W * c));
+    hudText(f, "PHIL", cols[0], y, INK, { shadow: SHADOW });
+    hudText(f, String(s.score).padStart(6, "0"), cols[0], y + 9, INK, { shadow: SHADOW });
+
+    const step = Math.floor(s.t / 7) % 4;
+    const cw = [4, 3, 1, 3][step];
+    rect(f, cols[1] + 2 - Math.floor(cw / 2), y + 9, cw, 6, "#fbb040");
+    rect(f, cols[1] + 2 - Math.floor(cw / 2), y + 9, cw, 1, "#fce0a0");
+    hudText(f, "X07", cols[1] + 7, y + 9, INK, { shadow: SHADOW });
+
+    hudText(f, "WORLD", cols[2], y, INK, { shadow: SHADOW });
+    hudText(f, "1-1", cols[2] + 8, y + 9, INK, { shadow: SHADOW });
+
+    hudText(f, "TIME", cols[3], y, INK, { shadow: SHADOW });
+    hudText(f, String(Math.max(0, s.timer)).padStart(3, "0"), cols[3] + 4, y + 9, INK, { shadow: SHADOW });
+  },
+
+  introRender(f, cx, cy) {
+    drawFighter(f.ctx, cx - 14, cy + 26, mario.heroes[1], "idle", 0, false);
+    hudText(f, "X  3", cx + 4, cy + 12, INK);
+  },
 
   heroes: [
     { hair: "long", pal: { ...overalls(GREEN, "#007000", "#ffffff"), hair: "#a04000", hair2: "#c86020" } },
-    { hair: "cap", pal: { ...overalls("#d82800", "#a81800", "#ffffff"), hair: "#7c3800", hair2: "#d82800" } },
+    { hair: "cap", moustache: true, pal: { ...overalls("#d82800", "#a81800", "#ffffff"), hair: "#7c3800", hair2: "#d82800" } },
     { hair: "pony", pal: { ...overalls("#9b5cf0", "#7a41c4", "#fce0a0"), hair: "#7c3800", hair2: "#a05820" } },
     { hair: "bob", skirt: true, pal: { ...overalls("#f878b8", "#c04888", "#ffffff"), hair: "#fcd8a0", hair2: "#e0b070" } },
   ],
@@ -68,50 +97,50 @@ export const mario: Theme = {
 
   foes: [
     {
-      // Green shell
-      hp: 1, speed: 0.8, weight: 3,
+      // Goomba
+      hp: 1, speed: 0.72, weight: 5, sprite: "goomba",
+      fighter: {
+        hair: "bald",
+        pal: {
+          skin: "#d8a068", skinShade: "#b07c48",
+          hair: "#8c5420", hair2: "#a86830",
+          shirt: "#8c5420", shirt2: "#a86830", accent: "#ffffff",
+          belt: "#3a2008", pants: "#4c2a0c", pants2: "#3a2008",
+          shoes: "#4c2a0c", shoes2: "#3a2008",
+        },
+      },
+    },
+    {
+      // Green koopa troopa
+      hp: 1, speed: 0.62, weight: 3, sprite: "koopa",
       fighter: {
         hair: "bald",
         pal: {
           skin: "#f8d878", skinShade: "#d0a840",
           hair: "#f8d878", hair2: "#d0a840",
-          shirt: GREEN, shirt2: "#007000", accent: "#f8f8f8",
-          belt: "#f8f8f8", pants: "#f8d878", pants2: "#d0a840",
+          shirt: GREEN, shirt2: "#007000", accent: "#f8e0a0",
+          belt: "#1b1008", pants: "#e45c10", pants2: "#b04000",
           shoes: "#e45c10", shoes2: "#b04000",
         },
       },
     },
     {
-      // Red shell
-      hp: 1, speed: 0.95, weight: 2,
+      // Red koopa troopa
+      hp: 1, speed: 0.8, weight: 2, sprite: "koopa",
       fighter: {
         hair: "bald",
         pal: {
           skin: "#f8d878", skinShade: "#d0a840",
           hair: "#f8d878", hair2: "#d0a840",
-          shirt: "#d82800", shirt2: "#a81800", accent: "#f8f8f8",
-          belt: "#f8f8f8", pants: "#f8d878", pants2: "#d0a840",
+          shirt: "#d82800", shirt2: "#a81800", accent: "#f8e0a0",
+          belt: "#1b1008", pants: "#e45c10", pants2: "#b04000",
           shoes: "#e45c10", shoes2: "#b04000",
-        },
-      },
-    },
-    {
-      // Goomba-brown stomper
-      hp: 1, speed: 0.7, weight: 3,
-      fighter: {
-        hair: "bald",
-        pal: {
-          skin: "#c07830", skinShade: "#8c5420",
-          hair: "#c07830", hair2: "#8c5420",
-          shirt: "#8c5420", shirt2: "#6b3c14", accent: "#f8f8f8",
-          belt: "#3c2410", pants: "#6b3c14", pants2: "#4c2a0c",
-          shoes: "#f8f8f8", shoes2: "#c8c8c8",
         },
       },
     },
     {
       // Hammer bro
-      hp: 2, speed: 0.6, weight: 1,
+      hp: 2, speed: 0.55, weight: 1,
       fighter: {
         hair: "helm",
         pal: {
@@ -212,6 +241,16 @@ export const mario: Theme = {
       rect(f, x - 1, y + 1, 4, 5, GREEN2);
       rect(f, x + 13, y + 1, 2, 5, "#007000");
       rect(f, x - 2, y, 18, 1, MORTAR);
+    });
+
+    // Flagpole on the horizon.
+    tile(f, 420, 1, 60, (x, i) => {
+      if (hash(i, 75) < 0.5) return;
+      const h = 62;
+      rect(f, x, top - h, 2, h, "#b8b8b8");
+      rect(f, x, top - h - 4, 4, 4, "#00a800");
+      rect(f, x - 6, top - h + 4, 6, 5, "#00a800");
+      rect(f, x - 4, top - 4, 10, 4, "#c84c0c");
     });
 
     // The ground itself.

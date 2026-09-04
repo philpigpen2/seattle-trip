@@ -1,19 +1,36 @@
 // Stage 1 — THE STREET. Double Dragon II: a city block after dark.
 import { bandSky, hash, lightCone, moon, rect, stars, tile } from "../bg";
+import { bar, hudText, lives } from "../hud";
 import type { Theme } from "./types";
+
+const INK = "#ffe9a8";
+const SHADOW = "#2a0f22";
 
 const NEON = ["#ff5c7a", "#4fd1ff", "#ffd166", "#7cf29a", "#c78bff"];
 const SIGNS = ["BAR", "PIZZA", "24H", "MOTEL", "TATTOO", "NOODLE", "SODA", "ARCADE"];
 
 export const street: Theme = {
   id: "street",
-  game: "DOUBLE DRAGON",
-  stage: "STAGE 1 - THE STREET",
+  intro: ["MISSION 1", "THE STREET"],
   scroll: 0.55,
   style: "brawl",
-  hitWords: ["POW!", "BAM!", "WHAM!", "KAPOW!", "THWACK!", "BOOF!"],
-  hudInk: "#ffe9a8",
-  hudShadow: "#2a0f22",
+  impact: "spark",
+  ink: INK,
+  shadow: SHADOW,
+
+  // The arcade original showed a life bar and a spare-lives count, nothing else.
+  hud(f, s) {
+    const pad = 5;
+    if (Math.floor(s.t / 22) % 2 === 0) hudText(f, "1UP", pad, pad, "#ff6b6b", { shadow: SHADOW });
+    hudText(f, String(s.score).padStart(6, "0"), pad, pad + 9, INK, { shadow: SHADOW });
+    bar(f, pad + 1, pad + 19, 44, 4, s.health[1], "#e6483d", "#ff9a86", "#3a1420");
+    lives(f, pad + 1, pad + 29, 3, "#4fd1ff");
+    hudText(f, "HI", f.W - pad, pad, "#ff6b6b", { align: "right", shadow: SHADOW });
+    hudText(f, String(s.hi).padStart(6, "0"), f.W - pad, pad + 9, INK, { align: "right", shadow: SHADOW });
+    if (f.W > 210) {
+      bar(f, f.W - pad - 44, pad + 19, 44, 4, s.health[0], "#4fd1ff", "#a8ecff", "#12304a");
+    }
+  },
 
   heroes: [
     {
@@ -106,8 +123,21 @@ export const street: Theme = {
       },
     },
     {
+      hp: 1, speed: 1.0, weight: 2,
+      fighter: {
+        hair: "pony",
+        pal: {
+          skin: "#f0b892", skinShade: "#c98a68",
+          hair: "#e8b23c", hair2: "#c08f26",
+          shirt: "#d6336c", shirt2: "#a52350", accent: "#ffffff",
+          belt: "#1d1a2b", pants: "#2a2233", pants2: "#1d1a2b",
+          shoes: "#d6336c", shoes2: "#a52350",
+        },
+      },
+    },
+    {
       // The big one — takes two hits.
-      hp: 2, speed: 0.6, weight: 1, 
+      hp: 2, speed: 0.6, weight: 1, scale: 1.18,
       fighter: {
         hair: "bald", big: true,
         pal: {
@@ -231,6 +261,21 @@ export const street: Theme = {
       }
     });
 
+    // Chain-link fence over the lower wall — the signature Double Dragon alley.
+    tile(f, 4, 0.72, 8, (x, i) => {
+      const fy = f.horizon - 17;
+      f.ctx.fillStyle = "#5f5a72";
+      for (let y = fy; y < f.horizon - 1; y += 4) {
+        f.ctx.fillRect(Math.round(x), y + ((i & 1) ? 2 : 0), 1, 2);
+        f.ctx.fillRect(Math.round(x) + 2, y + ((i & 1) ? 0 : 2), 1, 2);
+      }
+    });
+    tile(f, 46, 0.72, 30, (x) => {
+      rect(f, x, f.horizon - 19, 2, 19, "#3b3549");
+      rect(f, x, f.horizon - 19, 2, 1, "#6b6480");
+    });
+    rect(f, 0, f.horizon - 19, f.W, 2, "#4a4358");
+
     // Kerb + pavement
     rect(f, 0, f.horizon, f.W, 2, "#6b6480");
     rect(f, 0, f.horizon + 2, f.W, top - f.horizon - 2, "#3b3549");
@@ -248,11 +293,6 @@ export const street: Theme = {
     rect(f, 0, bot, f.W, 2, "#2f2a3d");
     rect(f, 0, bot + 2, f.W, f.H - bot, "#241f31");
     tile(f, 26, 1.15, 20, (x) => rect(f, x, bot + 6, 12, 2, "#4d4560"));
-  },
-
-  fore(f) {
-    const bot = f.groundBottom;
-    const top = f.groundTop;
 
     // Litter and puddles on the walkway.
     tile(f, 31, 1.05, 24, (x, i) => {
@@ -264,6 +304,23 @@ export const street: Theme = {
       } else if (kind > 0.6) {
         rect(f, x, y, 7, 2, "#2f3a52");
         rect(f, x + 1, y, 5, 1, "#4a6ea8");
+      }
+    });
+
+    // Oil drums and dumpsters against the wall.
+    tile(f, 89, 1.0, 40, (x, i) => {
+      const y = top + 3 + Math.floor(hash(i, 47) * 5);
+      if (hash(i, 48) > 0.55) {
+        rect(f, x, y - 15, 11, 15, "#8a3f2a");
+        rect(f, x, y - 15, 11, 1, "#b3573c");
+        rect(f, x, y - 11, 11, 1, "#5f2a1c");
+        rect(f, x, y - 5, 11, 1, "#5f2a1c");
+        rect(f, x + 3, y - 13, 5, 4, "#d8d2be");
+      } else {
+        rect(f, x - 2, y - 12, 20, 12, "#2f6b4a");
+        rect(f, x - 3, y - 14, 22, 3, "#3f8a5f");
+        rect(f, x + 2, y - 9, 3, 6, "#255539");
+        rect(f, x + 11, y - 9, 3, 6, "#255539");
       }
     });
 
@@ -282,6 +339,11 @@ export const street: Theme = {
         rect(f, x + 2, y - 11, 3, 2, "#e05a4c");
       }
     });
+
+  },
+
+  fore(f) {
+    const bot = f.groundBottom;
 
     // Lampposts in front of everything, casting light down the pavement.
     tile(f, 104, 1.28, 40, (x, i) => {

@@ -8,7 +8,7 @@ export default function Landing({ game }: { game?: string }) {
         <ArcadeStage theme={game} />
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center px-5 pt-[9vh] text-center">
+      <div className="relative z-10 flex min-h-screen flex-col items-center px-5 pt-[clamp(70px,16vh,164px)] text-center">
         <h1 className="font-arcade leading-[1.35] text-[clamp(22px,6.4vw,64px)] text-[#ffe9a8] [text-shadow:3px_3px_0_#c0392b,6px_6px_0_#2a0f22]">
           PHIL LANEY
         </h1>
@@ -28,12 +28,6 @@ export default function Landing({ game }: { game?: string }) {
         <p className="font-arcade mt-5 text-[clamp(6px,1.4vw,9px)] leading-[2.2] text-[#b9b2e0] [text-shadow:2px_2px_0_#101033]">
           SIGN IN TO CONTINUE
         </p>
-
-        <div className="mt-auto pb-6">
-          <p className="font-arcade text-[clamp(5px,1.2vw,8px)] leading-[2.4] text-[#6f6bb5]">
-            &#169; 2026 PHILIPLANEY.COM &#183; 1 PLAYER ONLY
-          </p>
-        </div>
       </div>
     </main>
   );

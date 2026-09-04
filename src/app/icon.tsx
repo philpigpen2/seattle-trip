@@ -8,22 +8,17 @@ export default function Icon() {
     (
       <div
         style={{
-          background: "#1e40af",
           width: "100%",
           height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: "8px",
-          color: "white",
-          fontSize: "13px",
-          fontWeight: "bold",
-          letterSpacing: "-0.5px",
+          fontSize: "28px",
         }}
       >
-        PL
+        👍
       </div>
     ),
-    { ...size }
+    { ...size },
   );
 }
