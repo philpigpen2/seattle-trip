@@ -16,12 +16,26 @@
 - Auth is **Clerk**, already wired in this repo (invite-only/restricted). `/` becomes: signed out → arcade landing; signed in → the existing app cards.
 - `/dryht` stays PUBLIC — memory `handover_rollout_trackers_20260808` records it as an intentionally public (noindex) tracker.
 
-## The five games
-1. **Double Dragon II** — night city street, thugs. ← built first
-2. **Super Mario Bros.** — overworld, goombas
-3. **Golden Axe** — fantasy path, skeleton knights
-4. **Ghosts 'n Goblins** — graveyard, zombies
-5. **Contra** — jungle base, explosions
+## The six games (rotation order)
+1. **Double Dragon II** (`street`) — night street, chain-link fence, oil drums; energy-bar HUD
+2. **Super Mario Bros.** (`mario`) — goombas + koopas as real critters, jump-stomps that flatten
+   them, point-value popups, MARIO/COIN/WORLD/TIME bar, flagpole
+3. **Pac-Man** (`pacman`) — blue maze, corridor of dots eaten behind the party, four ghosts,
+   1UP/HIGH SCORE/2UP, lives and a cherry
+4. **Golden Axe** (`goldenaxe`) — sunset ridges, torches; magic burns the screen and drops
+   everything standing; magic-pot meter
+5. **TMNT** (`tmnt`) — burning New York block, purple Foot Soldiers who vanish in a puff, four
+   shells with four weapons, four status panels along the bottom
+6. **Contra** (`contra`) — jungle base, five-shot spread that fans out, round explosions
+
+Ghosts 'n Goblins was built and then removed at Phil's request in favour of TMNT.
+
+## Cast rules (Phil, 2026-09-04)
+- **No names on screen.** Each character is labelled with their birth year instead: Bethany 1981,
+  Phil 1981, Evelyn 2015, Charlotte 2017 — cast order is [Bethany, Phil, Evelyn, Charlotte].
+- The two children are drawn shorter (`HERO_SCALE` in `themes/types.ts`).
+- Delaney is a **chihuahua x dachshund**: long, low, short legs, big upright ears.
+- **No game names anywhere on screen** — the art has to identify the game.
 
 ## Files
 - `src/lib/brawl/font.ts` — 5x7 bitmap font + `drawText`
@@ -53,7 +67,13 @@ the older memory does not exist and `vercel --scope` rejects it.
 - Do NOT try to advance the animation with `--virtual-time-budget`: rAF does not
   tick, and stubbing rAF with setTimeout stops the compositor painting (black canvas).
   The `warmup` option is the supported way to reach a later frame.
-- A sixth game = one file in `src/lib/brawl/themes/` + one line in `themes/index.ts`.
+- Another game = one file in `src/lib/brawl/themes/` + one line in `themes/index.ts`.
+- Each theme owns its own `hud()`, `intro` card, and `impact` style; `special` is the optional
+  screen-filling move (Golden Axe magic is the only user so far).
+- Non-humanoid enemies are `sprite: "goomba" | "koopa" | "ghost"` on a FoeSpec, drawn by
+  `drawCritter`. Never tint a downed enemy white — it renders as a solid slab.
+- The between-games card sits at 0.72 * height on purpose: the page title covers the middle.
+- Favicon is the thumbs-up emoji rendered by `src/app/icon.tsx` (next/og renders emoji fine).
 
 ## Landing route for this repo
 Personal repo, no PR ceremony: commit + push to `main`, then verify the Vercel production deployment reaches `success` before reporting done.
