@@ -46,9 +46,9 @@ export default function Landing({ game }: { game?: string }) {
 
   const playing = pinned !== null && PLAYABLE.has(pinned);
   const brawling = pinned !== null && BRAWLERS.has(pinned);
-  // Slim marquee whenever the game owns the screen: the maze always does, and
-  // any game somebody has settled down to play does too.
-  const full = current === "pacman" || playing;
+  // Only the maze needs the slim marquee — it is the one that fills the middle
+  // of the screen. The rest keep their corners for their own status bars.
+  const full = current === "pacman";
 
   // Controls dim away so the game has the screen, and wake on any activity.
   useEffect(() => {
