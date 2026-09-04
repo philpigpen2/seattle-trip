@@ -26,13 +26,34 @@
    everything standing; magic-pot meter
 5. **TMNT** (`tmnt`) — burning New York block, purple Foot Soldiers who vanish in a puff, four
    shells with four weapons, four status panels along the bottom
-6. **Contra** (`contra`) — jungle base, five-shot spread that fans out, round explosions
+6. **Contra** (`contra`) — side-on jungle platformer, rocky ledge, girder bridge over water,
+   five-shot spread, weapon capsule
+
+## Verification traps found here
+- **Headless Chrome clamps the layout viewport to 500px wide**, so `--window-size=390,...`
+  renders at 500 and crops — apparent mobile overflow was an artifact, not a bug.
+- `--virtual-time-budget` does not tick `requestAnimationFrame`; use the engine's `warmup`.
+- Custom stages need their own warm-up (`custom.step()`), or screenshots sit 20 frames in.
+- Vercel's GitHub integration silently skipped a commit once; an empty commit re-triggered it.
+  Check `gh api /repos/philpigpen2/seattle-trip/deployments?sha=<sha>` before assuming it built.
 
 Ghosts 'n Goblins was built and then removed at Phil's request in favour of TMNT.
 
+## Fidelity rules (Phil, 2026-09-04 — after he rejected the first pass)
+- **Each stage must genuinely look like the game it represents.** The first build was
+  pastiche and he called it out on SMB specifically.
+- **No game names on screen.** The art has to identify the game.
+- **Pixel size is per-era.** `targetW` / `targetH` on a theme set the internal buffer, so an
+  8-bit NES screen is 256 wide and a Sega System 16 board is 320. Do not use one scale for all.
+- **Staging is per-genre.** `staging: "flat"` puts the whole cast on one ground line for the
+  platformers (Mario, Contra). The depth plane is for the brawlers only. A game may replace the
+  brawl entirely with `custom` — Pac-Man does.
+
 ## Cast rules (Phil, 2026-09-04)
-- **No names on screen.** Each character is labelled with their birth year instead: Bethany 1981,
-  Phil 1981, Evelyn 2015, Charlotte 2017 — cast order is [Bethany, Phil, Evelyn, Charlotte].
+- **No labels of any kind above the characters.** The birth years (Bethany 1981, Phil 1981,
+  Evelyn 2015, Charlotte 2017) were given ONLY to decide how big to draw each of them — two
+  adults at full height, two children shorter (`HERO_SCALE`). Never put them on screen.
+  Cast order is [Bethany, Phil, Evelyn, Charlotte].
 - The two children are drawn shorter (`HERO_SCALE` in `themes/types.ts`).
 - Delaney is a **chihuahua x dachshund**: long, low, short legs, big upright ears.
 - **No game names anywhere on screen** — the art has to identify the game.
