@@ -32,8 +32,28 @@
 - `src/components/StreetBrawl.tsx` — React wrapper
 - `src/app/page.tsx` — auth gate
 
-## Status
-IN PROGRESS — see git log on `main`.
+## Status — DONE AND LIVE (2026-09-04)
+
+All five games are live on philiplaney.com and rotate every 30s. Logged-out
+visitors get only the attract screen; the app list renders only when signed in
+(verified: the logged-out HTML contains "PRESS START" and none of the app names).
+
+Shipped on `main`: `d1c3fa7` (gate + Double Dragon), `37b4170` (four more games +
+rotation), `8aae4d9` (`?game=` pin + rAF guard). Production deployment Ready under
+Vercel scope **`phil-laneys-projects`** — the `phil-7305s-projects` scope named in
+the older memory does not exist and `vercel --scope` rejects it.
+
+`philiplaney.com/?game=street|mario|goldenaxe|ghosts|contra` pins one game.
+
+### If you pick up more work here
+- Preview harness (no Clerk keys needed locally): `scratchpad/preview/` bundled with
+  `npx esbuild <main.ts> --bundle --outfile=main.js --format=iife`, served with
+  `python3 -m http.server 8791`, screenshotted with headless Chrome. Use
+  `?warm=<frames>` to jump to a moment; `?theme=<id>` to pin a game.
+- Do NOT try to advance the animation with `--virtual-time-budget`: rAF does not
+  tick, and stubbing rAF with setTimeout stops the compositor painting (black canvas).
+  The `warmup` option is the supported way to reach a later frame.
+- A sixth game = one file in `src/lib/brawl/themes/` + one line in `themes/index.ts`.
 
 ## Landing route for this repo
 Personal repo, no PR ceremony: commit + push to `main`, then verify the Vercel production deployment reaches `success` before reporting done.
