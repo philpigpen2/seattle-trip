@@ -27,10 +27,30 @@ export type HudState = {
 /** How a defeated enemy comes apart — each game has its own signature. */
 export type Impact = "spark" | "points" | "gleam" | "puff" | "boom";
 
+/** A game that runs its own simulation instead of the walking brawl. */
+export type CustomStage = {
+  reset(w: number, h: number): void;
+  step(): void;
+  draw(f: Frame): void;
+  score(): number;
+};
+
 export type Theme = {
   id: string;
   /** Lines shown on the black card between games. */
   intro: string[];
+  /** "depth" = beat-em-up plane, "flat" = side-on platformer on one ground line. */
+  staging?: "depth" | "flat";
+  /** Flat stages: pixels of ground drawn below the walk line. */
+  floor?: number;
+  /**
+   * Internal width to aim for, which sets how chunky the pixels are.
+   * 8-bit hardware was narrow (NES 256, Pac-Man 224); the 16-bit boards were
+   * wider (Sega System 16 and Konami's TMNT board are 320 and 288).
+   */
+  targetW?: number;
+  /** Height to aim for instead, for the games that ran on a vertical monitor. */
+  targetH?: number;
   scroll: number;
   style: "brawl" | "blade" | "stomp" | "shoot" | "throw";
   impact: Impact;
@@ -40,6 +60,8 @@ export type Theme = {
   dog: Dog;
   foes: FoeSpec[];
   hud(f: Frame, s: HudState): void;
+  /** Replaces the brawl entirely — used by the maze game. */
+  custom?: () => CustomStage;
   introRender?(f: Frame, cx: number, cy: number): void;
   special?: {
     everyFrames: number;
@@ -54,7 +76,5 @@ export type Theme = {
   fore(f: Frame): void;
 };
 
-/** Birth years stand in for names. Order: Bethany, Phil, Evelyn, Charlotte. */
-export const HERO_LABELS = ["1981", "1981", "2015", "2017"] as const;
-/** Two grown-ups and two children. */
+/** Two grown-ups and two children. Order: Bethany, Phil, Evelyn, Charlotte. */
 export const HERO_SCALE = [1, 1, 0.76, 0.66] as const;

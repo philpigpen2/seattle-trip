@@ -680,33 +680,40 @@ export function drawCritter(
       o.push([8, 6, 2, 3, "#2121de"]);
     }
   } else if (kind === "goomba") {
-    anchorY = 15;
+    // 16x16: domed cap, tan face, angry brows, two feet that swap.
+    anchorY = 16;
     if (pose === "flat" || pose === "ko") {
-      o.push([1, 11, 15, 4, p.shirt]);
-      o.push([1, 11, 15, 1, p.shirt2]);
-      o.push([4, 12, 2, 1, dark]);
-      o.push([10, 12, 2, 1, dark]);
-      o.push([0, 13, 3, 2, p.pants]);
-      o.push([14, 13, 3, 2, p.pants]);
+      o.push([0, 12, 16, 4, p.shirt]);
+      o.push([1, 12, 14, 1, p.shirt2]);
+      o.push([3, 13, 3, 2, p.skin]);
+      o.push([10, 13, 3, 2, p.skin]);
+      o.push([4, 13, 1, 1, "#000000"]);
+      o.push([11, 13, 1, 1, "#000000"]);
     } else {
-      const squash = pose === "hurt" ? 1 : 0;
-      o.push([4, 0 + squash, 8, 1, p.shirt2]);
-      o.push([2, 1 + squash, 12, 1, p.shirt]);
-      o.push([1, 2 + squash, 14, 6 - squash, p.shirt]);
-      o.push([0, 4 + squash, 1, 4, p.shirt]);
-      o.push([15, 4 + squash, 1, 4, p.shirt]);
-      o.push([3, 1 + squash, 6, 1, p.shirt2]);
-      o.push([3, 7, 10, 4, p.skin]);
-      o.push([4, 4 + squash, 2, 4, "#ffffff"]);
-      o.push([10, 4 + squash, 2, 4, "#ffffff"]);
-      o.push([5, 5 + squash, 1, 2, dark]);
-      o.push([10, 5 + squash, 1, 2, dark]);
-      o.push([3, 3 + squash, 3, 1, dark]);
-      o.push([10, 3 + squash, 3, 1, dark]);
-      o.push([6, 9, 4, 1, dark]);
-      const step = frame & 1 ? 1 : -1;
-      o.push([1 + step, 11, 6, 4, p.pants]);
-      o.push([9 - step, 11, 6, 4, p.pants2]);
+      const sq = pose === "hurt" ? 1 : 0;
+      o.push([5, 0 + sq, 6, 1, p.shirt2]);
+      o.push([3, 1 + sq, 10, 1, p.shirt]);
+      o.push([2, 2 + sq, 12, 2, p.shirt]);
+      o.push([1, 4 + sq, 14, 5 - sq, p.shirt]);
+      o.push([0, 6 + sq, 1, 3, p.shirt]);
+      o.push([15, 6 + sq, 1, 3, p.shirt]);
+      o.push([1, 9, 14, 4, p.skin]);
+      o.push([0, 10, 1, 2, p.skin]);
+      o.push([15, 10, 1, 2, p.skin]);
+      // Eyes sit across the line where the cap meets the face.
+      o.push([3, 6 + sq, 3, 4, "#ffffff"]);
+      o.push([10, 6 + sq, 3, 4, "#ffffff"]);
+      o.push([5, 7 + sq, 1, 3, "#000000"]);
+      o.push([10, 7 + sq, 1, 3, "#000000"]);
+      // Heavy brows, angled towards the middle.
+      o.push([2, 5 + sq, 4, 1, "#000000"]);
+      o.push([4, 6 + sq, 2, 1, "#000000"]);
+      o.push([10, 5 + sq, 4, 1, "#000000"]);
+      o.push([10, 6 + sq, 2, 1, "#000000"]);
+      // Feet.
+      const step = frame & 1;
+      o.push([step ? 0 : 1, 13, 6, 3, p.pants]);
+      o.push([step ? 10 : 9, 13, 6, 3, p.pants2]);
     }
   } else {
     // Koopa: shell on the back, beak forward, orange feet.

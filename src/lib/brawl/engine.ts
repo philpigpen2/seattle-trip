@@ -2,15 +2,14 @@
 // the projectiles and the effects; each game supplies its world, cast and HUD.
 
 import type { Frame } from "./bg";
-import { drawText, textWidth } from "./font";
+import { drawText } from "./font";
 import { drawCritter, drawDog, drawFighter, type Fighter, type Pose } from "./sprites";
-import { HERO_LABELS, HERO_SCALE, type FoeSpec, type Theme } from "./themes/types";
+import { HERO_SCALE, type CustomStage, type FoeSpec, type Theme } from "./themes/types";
 
 type HeroState = "walk" | "punch" | "kick" | "slash" | "hop" | "hurt" | "cheer";
 type FoeState = "walk" | "hurt" | "fly" | "ko" | "flat";
 
 type Hero = {
-  label: string;
   f: Fighter;
   baseX: number;
   lane: number;
@@ -21,7 +20,6 @@ type Hero = {
   ink: string;
   k: number;
   health: number;
-  plateDX: number;
 };
 
 type Foe = {
@@ -121,11 +119,21 @@ export function mountBrawl(
   let shots: Shot[] = [];
   let fx: Fx[] = [];
 
+  let custom: CustomStage | null = null;
+  let customFor = "";
+
   let dogState: "trot" | "leap" | "bark" = "trot";
   let dogTimer = 0;
   let dogLunge = 0;
 
   const frame = (): Frame => {
+    if (theme.staging === "flat") {
+      // Side-on platformer: one ground line, no depth.
+      const base = theme.floor ?? 32;
+      const floor = Math.max(base, Math.round((H * 0.17) / 8) * 8);
+      const line = H - floor;
+      return { ctx, W, H, cam, t, horizon: line, groundTop: line, groundBottom: line };
+    }
     const groundBottom = H - Math.max(5, Math.round(H * 0.07));
     const strip = Math.max(26, Math.min(50, Math.round(H * 0.24)));
     const groundTop = groundBottom - strip;
@@ -133,12 +141,28 @@ export function mountBrawl(
   };
 
   function buildParty() {
+    if (theme.custom) {
+      if (!custom || customFor !== theme.id) {
+        custom = theme.custom();
+        customFor = theme.id;
+      }
+      custom.reset(W, H);
+      foes = [];
+      shots = [];
+      fx = [];
+      heroes = [];
+      // Open part-way through a life, like the attract mode does.
+      for (let i = 0; i < warmFrames; i++) custom.step();
+      return;
+    }
+    custom = null;
+    customFor = "";
+    const flat = theme.staging === "flat";
     const spread = Math.min(1, W / 300);
-    const xs = [0.28, 0.4, 0.19, 0.32];
-    const lanes = [0.42, 0.72, 0.14, 0.96];
-    heroes = HERO_LABELS.map((label, i) => ({
-      label,
-      f: theme.heroes[i],
+    const xs = flat ? [0.3, 0.44, 0.19, 0.37] : [0.28, 0.4, 0.19, 0.32];
+    const lanes = flat ? [0.5, 0.5, 0.5, 0.5] : [0.42, 0.72, 0.14, 0.96];
+    heroes = theme.heroes.map((fighter, i) => ({
+      f: fighter,
       baseX: Math.round(W * (0.13 + (xs[i] - 0.19) * spread) + 26),
       lane: lanes[i],
       state: "walk" as HeroState,
@@ -148,7 +172,6 @@ export function mountBrawl(
       ink: theme.heroes[i].band ?? theme.heroes[i].pal.shirt,
       k: HERO_SCALE[i],
       health: 1,
-      plateDX: [-15, 15, -19, 19][i],
     }));
     foes = [];
     shots = [];
@@ -162,12 +185,17 @@ export function mountBrawl(
   }
 
   const laneY = (f: Frame, lane: number) =>
-    Math.round(f.groundTop + 11 + lane * (f.groundBottom - f.groundTop - 11));
+    theme.staging === "flat"
+      ? f.groundTop
+      : Math.round(f.groundTop + 11 + lane * (f.groundBottom - f.groundTop - 11));
 
   function resize() {
     const cw = canvas.clientWidth || 640;
     const ch = canvas.clientHeight || 360;
-    scale = Math.max(2, Math.min(7, Math.round(cw / 340)));
+    const scaleFromH = theme.targetH ? Math.floor(ch / theme.targetH) : 0;
+    scale = theme.targetH
+      ? Math.max(2, Math.min(8, scaleFromH || 2))
+      : Math.max(2, Math.min(8, Math.round(cw / (theme.targetW ?? 320))));
     const nw = Math.max(140, Math.ceil(cw / scale));
     const nh = Math.max(110, Math.ceil(ch / scale));
     if (nw === W && nh === H) return;
@@ -325,6 +353,10 @@ export function mountBrawl(
 
   function step(f: Frame) {
     t++;
+    if (custom) {
+      custom.step();
+      return;
+    }
     cam += theme.scroll;
     if (shake > 0) shake = Math.max(0, shake - 0.35);
     if (t % 24 === 0 && clock > 0) clock--;
@@ -361,7 +393,7 @@ export function mountBrawl(
           const target = foes.find(
             (foe) =>
               foe.state === "walk" &&
-              Math.abs(foe.y - hy) < (ranged ? 13 : 9) &&
+              Math.abs(foe.y - hy) < (theme.staging === "flat" ? 40 : ranged ? 13 : 9) &&
               foe.x - h.baseX > 10 &&
               foe.x - h.baseX < reach,
           );
@@ -395,7 +427,7 @@ export function mountBrawl(
             const reach = h.state === "slash" ? 44 : h.state === "hop" ? 30 : h.state === "kick" ? 34 : 30;
             for (const foe of foes) {
               if (foe.state !== "walk" && foe.state !== "hurt") continue;
-              if (Math.abs(foe.y - hy) > 12) continue;
+              if (theme.staging !== "flat" && Math.abs(foe.y - hy) > 12) continue;
               if (foe.x - h.baseX > 2 && foe.x - h.baseX < reach) {
                 hitFoe(foe, h.state === "kick" ? 0.9 : h.state === "slash" ? 1.2 : 0.4, h.state === "hop");
                 break;
@@ -450,7 +482,11 @@ export function mountBrawl(
         foe.y = laneY(f, foe.lane);
         // Reaching the party costs somebody a slice of health.
         const victim = heroes.find(
-          (h) => h.state !== "hurt" && Math.abs(laneY(f, h.lane) - foe.y) < 10 && foe.x - h.baseX < 12 && foe.x - h.baseX > -6,
+          (h) =>
+            h.state !== "hurt" &&
+            (theme.staging === "flat" || Math.abs(laneY(f, h.lane) - foe.y) < 10) &&
+            foe.x - h.baseX < 12 &&
+            foe.x - h.baseX > -6,
         );
         if (victim) {
           victim.state = "hurt";
@@ -541,14 +577,6 @@ export function mountBrawl(
     return { pose: h.state === "kick" ? "kick" : "punch", frame: 0 };
   }
 
-  function plate(text: string, cx: number, y: number, ink: string) {
-    const w = textWidth(text, 1);
-    ctx.fillStyle = "#140d20";
-    ctx.fillRect(Math.round(cx - w / 2) - 2, y - 2, w + 4, 10);
-    ctx.fillStyle = "#2a2140";
-    ctx.fillRect(Math.round(cx - w / 2) - 2, y - 2, w + 4, 1);
-    drawText(ctx, text, cx, y, ink, { align: "center" });
-  }
 
   function drawCast(f: Frame) {
     const actors: { y: number; draw: () => void }[] = [];
@@ -586,7 +614,6 @@ export function mountBrawl(
               );
             }
           }
-          plate(h.label, Math.round(x) + h.plateDX, y - Math.round(40 * h.k) - Math.round((1 - h.lane) * 9), h.ink);
         },
       });
     }
@@ -746,6 +773,12 @@ export function mountBrawl(
 
   function render() {
     const f = frame();
+    if (custom) {
+      custom.draw(f);
+      drawScanlines(f);
+      if (wipe > 0) drawWipe(f);
+      return;
+    }
     ctx.save();
     if (shake > 0.4) {
       ctx.translate(Math.round(rand(-shake, shake)), Math.round(rand(-shake * 0.6, shake * 0.6)));
@@ -770,7 +803,7 @@ export function mountBrawl(
       magic,
       timer: clock,
       health: heroes.map((h) => h.health),
-      labels: HERO_LABELS,
+      labels: ["1P", "2P", "3P", "4P"],
       inks: heroes.map((h) => h.ink),
     });
     drawScanlines(f);
