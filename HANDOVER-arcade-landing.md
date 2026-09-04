@@ -37,9 +37,13 @@
 - **Five family characters, five Pac-Man slots.** Whoever you pick becomes Pac-Man; the other
   four take the classic ghost colours. They are told apart by a *topper* — long hair, cap,
   ponytail, bob, dog ears — drawn on the dome or the disc. `PlayerPicker` chooses.
-- Steering model: a turn is buffered and taken at the first corner where it fits, then held.
-  Do NOT make a held direction override every cell — that wedges him against walls.
-- No input for 7 seconds hands control back to the attract AI.
+- Steering model: he moves ONLY while a direction is held, and stops on a cell when it is
+  released. A turn is buffered and taken at the first corner where it fits. Walking into a
+  wall stops him rather than sliding him along it.
+- **Once someone takes over, the attract AI never drives Pac-Man again** (Phil, explicit).
+  There is no idle hand-back. Do not reintroduce one.
+- Do NOT latch a `stalled` flag — an earlier attempt deadlocked because unstalling needed the
+  very input that could not be consumed while stalled. Re-evaluate each frame instead.
 - Only Pac-Man is playable so far (`PLAYABLE` in `Landing.tsx`); the rest still play themselves.
 
 ## Verification traps found here
