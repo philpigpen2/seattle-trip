@@ -16,7 +16,7 @@ export default function Landing({ game }: { game?: string }) {
   );
   const [current, setCurrent] = useState<string | null>(null);
   const [player, setPlayer] = useState(1);
-  const inputRef = useRef<((dir: 0 | 1 | 2 | 3) => void) | null>(null);
+  const controls = useRef<{ input: (dir: 0 | 1 | 2 | 3) => void; release: () => void } | null>(null);
 
   const pick = useCallback((id: string | null) => {
     setPinned(id);
@@ -27,9 +27,10 @@ export default function Landing({ game }: { game?: string }) {
   }, []);
 
   // The pad feeds the same input the keyboard and swipes use.
-  const sendDir = useCallback((dir: 0 | 1 | 2 | 3) => inputRef.current?.(dir), []);
-  const handleReady = useCallback((fn: (dir: 0 | 1 | 2 | 3) => void) => {
-    inputRef.current = fn;
+  const sendDir = useCallback((dir: 0 | 1 | 2 | 3) => controls.current?.input(dir), []);
+  const sendRelease = useCallback(() => controls.current?.release(), []);
+  const handleReady = useCallback((c: { input: (dir: 0 | 1 | 2 | 3) => void; release: () => void }) => {
+    controls.current = c;
   }, []);
 
   const playing = pinned !== null && PLAYABLE.has(pinned);
@@ -75,7 +76,7 @@ export default function Landing({ game }: { game?: string }) {
         </SignInButton>
 
         <p className="font-arcade mt-5 text-[clamp(6px,1.4vw,9px)] leading-[2.2] text-[#b9b2e0] [text-shadow:2px_2px_0_#101033]">
-          {playing ? "ARROWS, SWIPE OR THE PAD TO PLAY" : "SIGN IN TO CONTINUE"}
+          {playing ? "HOLD ARROWS, DRAG OR THE PAD TO MOVE" : "SIGN IN TO CONTINUE"}
         </p>
       </div>
 
@@ -91,7 +92,7 @@ export default function Landing({ game }: { game?: string }) {
 
       {playing && (
         <div className="absolute bottom-3 right-3 z-20 sm:bottom-6 sm:right-6">
-          <DPad onDir={sendDir} />
+          <DPad onDir={sendDir} onRelease={sendRelease} />
         </div>
       )}
     </main>

@@ -174,13 +174,14 @@ export function createPacman(): CustomStage {
   let fruit = 0;
   let playerIndex = 1;
   /**
-   * Steering by hand: `wanted` is the turn just asked for, taken at the first
-   * corner where it is legal; `held` is the direction being travelled until
-   * another is asked for. Both are dropped once nobody has played for a while.
+   * Steering by hand. Once somebody takes over they keep him: the attract mode
+   * never drives him again, and he only moves while a direction is held, so he
+   * stops the moment they do.
    */
+  let taken = false;
+  let moving = false;
   let wanted: Dir | null = null;
   let held: Dir | null = null;
-  let idle = 0;
 
   let pac: Actor = { col: 13, row: 23, off: 0.5, dir: 2, next: 2, speed: 0.09 };
   let ghosts: Ghost[] = [];
@@ -340,12 +341,24 @@ export function createPacman(): CustomStage {
       playerIndex = Math.max(0, Math.min(FAMILY.length - 1, index));
       wanted = null;
       held = null;
+      moving = false;
       resetActors();
     },
 
     input(dir: Dir) {
+      taken = true;
+      moving = true;
       wanted = dir;
-      idle = 0;
+    },
+
+    release() {
+      moving = false;
+      // Come to rest on a cell rather than half way between two.
+      if (pac.off > 0.5) {
+        pac.col = ((pac.col + DX[pac.dir]) % COLS + COLS) % COLS;
+        pac.row += DY[pac.dir];
+      }
+      pac.off = 0;
     },
 
     step() {
@@ -359,29 +372,33 @@ export function createPacman(): CustomStage {
         return;
       }
 
-      if (wanted !== null || held !== null) {
-        idle++;
-        // Hand back to the attract mode if nobody has touched it for a while.
-        if (idle > 420) {
-          wanted = null;
-          held = null;
-        }
-      }
-      advance(pac, true, () => {
-        const open = (d: Dir) =>
-          !isWall(((pac.col + DX[d]) % COLS + COLS) % COLS, pac.row + DY[d], true);
-        // Take the requested turn at the first corner where it fits, then keep
-        // travelling that way until another turn is asked for.
-        if (wanted !== null && open(wanted)) {
+      const open = (d: Dir) =>
+        !isWall(((pac.col + DX[d]) % COLS + COLS) % COLS, pac.row + DY[d], true);
+
+      if (!taken) {
+        advance(pac, true, pacTarget);
+      } else if (moving) {
+        // Standing on a cell, a new direction can be taken straight away;
+        // mid-corridor it waits for the next corner.
+        if (wanted !== null && pac.off < pac.speed && open(wanted)) {
           held = wanted;
           wanted = null;
+          pac.dir = held;
         }
-        if (held !== null) {
-          if (open(held)) return held;
-          if (open(pac.dir)) return pac.dir;
+        const dir = held ?? pac.dir;
+        // Up against a wall he simply stands there until a way is asked for.
+        if (open(dir)) {
+          pac.dir = dir;
+          advance(pac, true, () => {
+            if (wanted !== null && open(wanted)) {
+              held = wanted;
+              wanted = null;
+            }
+            if (held !== null && open(held)) return held;
+            return pac.dir;
+          });
         }
-        return pacTarget();
-      });
+      }
 
       // Eat whatever is under him.
       if (dots[pac.row]?.[pac.col]) {
@@ -521,7 +538,8 @@ export function createPacman(): CustomStage {
       if (dying === 0 || Math.floor(dying / 4) % 2 === 0) {
         const p = pixel(pac);
         const r = cell * 0.8;
-        const open = dying > 0 ? 1 : Math.abs(Math.sin(t / 5)) * 0.85;
+        const chomp = !taken || moving;
+        const open = dying > 0 ? 1 : chomp ? Math.abs(Math.sin(t / 5)) * 0.85 : 0.32;
         const face = (pac.dir * Math.PI) / 2;
         ctx.fillStyle = YELLOW;
         for (let dy = -r; dy <= r; dy++) {

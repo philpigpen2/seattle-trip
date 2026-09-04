@@ -15,7 +15,7 @@ type Props = {
   /** Fires when the running game changes, so the selector can follow along. */
   onTheme?: (id: string) => void;
   /** Receives a function for feeding directions in from an on-screen pad. */
-  onReady?: (input: (dir: 0 | 1 | 2 | 3) => void) => void;
+  onReady?: (controls: { input: (dir: 0 | 1 | 2 | 3) => void; release: () => void }) => void;
   className?: string;
 };
 
@@ -49,7 +49,7 @@ export default function ArcadeStage({
       onTheme: (id) => onThemeRef.current?.(id),
     });
     handle.current = h;
-    onReadyRef.current?.((dir) => h.input(dir));
+    onReadyRef.current?.({ input: (dir) => h.input(dir), release: () => h.release() });
     return () => {
       handle.current = null;
       h.destroy();

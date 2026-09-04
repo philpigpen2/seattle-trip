@@ -70,6 +70,7 @@ export type BrawlHandle = {
   destroy: () => void;
   setPlayer: (index: number) => void;
   input: (dir: 0 | 1 | 2 | 3) => void;
+  release: () => void;
 };
 
 export function mountBrawl(
@@ -84,7 +85,7 @@ export function mountBrawl(
   } = {},
 ): BrawlHandle {
   const ctx2d = canvas.getContext("2d", { alpha: false });
-  if (!ctx2d) return { destroy: () => {}, setPlayer: () => {}, input: () => {} };
+  if (!ctx2d) return { destroy: () => {}, setPlayer: () => {}, input: () => {}, release: () => {} };
   const ctx: CanvasRenderingContext2D = ctx2d;
   ctx.imageSmoothingEnabled = false;
 
@@ -858,29 +859,44 @@ export function mountBrawl(
     ArrowRight: 0, ArrowDown: 1, ArrowLeft: 2, ArrowUp: 3,
     d: 0, s: 1, a: 2, w: 3, D: 0, S: 1, A: 2, W: 3,
   };
+  // Movement lasts only while a direction is actually being held.
+  const down = new Set<string>();
   const onKey = (e: KeyboardEvent) => {
     const dir = KEYS[e.key];
     if (dir === undefined || !custom?.input) return;
     e.preventDefault();
+    down.add(e.key);
     custom.input(dir);
   };
+  const onKeyUp = (e: KeyboardEvent) => {
+    if (KEYS[e.key] === undefined) return;
+    down.delete(e.key);
+    if (down.size === 0) custom?.release?.();
+  };
   window.addEventListener("keydown", onKey, { passive: false });
+  window.addEventListener("keyup", onKeyUp);
 
+  // On a phone, drag a thumb to move and lift it to stop.
   let touchX = 0;
   let touchY = 0;
   const onTouchStart = (e: TouchEvent) => {
     touchX = e.changedTouches[0].clientX;
     touchY = e.changedTouches[0].clientY;
   };
-  const onTouchEnd = (e: TouchEvent) => {
+  const onTouchMove = (e: TouchEvent) => {
     if (!custom?.input) return;
     const dx = e.changedTouches[0].clientX - touchX;
     const dy = e.changedTouches[0].clientY - touchY;
-    if (Math.abs(dx) < 18 && Math.abs(dy) < 18) return;
+    if (Math.abs(dx) < 14 && Math.abs(dy) < 14) return;
     custom.input(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 0 : 2) : dy > 0 ? 1 : 3);
+    touchX = e.changedTouches[0].clientX;
+    touchY = e.changedTouches[0].clientY;
   };
+  const onTouchEnd = () => custom?.release?.();
   canvas.addEventListener("touchstart", onTouchStart, { passive: true });
+  canvas.addEventListener("touchmove", onTouchMove, { passive: true });
   canvas.addEventListener("touchend", onTouchEnd, { passive: true });
+  canvas.addEventListener("touchcancel", onTouchEnd, { passive: true });
 
   const onVis = () => {
     if (document.hidden) {
@@ -903,13 +919,19 @@ export function mountBrawl(
     input(dir: 0 | 1 | 2 | 3) {
       custom?.input?.(dir);
     },
+    release() {
+      custom?.release?.();
+    },
     destroy() {
       running = false;
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
       canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
       ro.disconnect();
     },
   };
