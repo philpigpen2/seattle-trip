@@ -60,6 +60,25 @@
 - A `custom` stage draws its own world; the engine still calls `theme.hud` over the top, so
   Mario keeps the MARIO/COIN/WORLD/TIME bar and Pac-Man draws its own readout instead.
 
+## Play-testing (the only way these bugs were found)
+`scratchpad/playtest.ts` stubs a DOM (canvas, rAF, ResizeObserver) and drives the REAL engine
+headlessly for minutes of game time per stage, capturing what `theme.hud` receives. The custom
+sims expose `debug()` for the same purpose. Screenshots cannot find any of this. Faults it caught:
+- **Mario froze after ~17s**: the runner jumped when already touching a pipe, so it went straight
+  up and landed in the same place forever. Needs look-ahead, air control, and enough height for a
+  four-tile pipe.
+- **Pac-Man stopped scoring after ~80s**: computing only the FIRST step of a route at every corner
+  makes it ping-pong; and vetoing any dot near a ghost made it starve. It now plans a whole route
+  and commits, and falls back to a guarded dot.
+- **Landing on a goomba scored as walking into one**: the ground tile under it had already set
+  `onGround`. Judge a stomp from the actor's PREVIOUS position (`Actor.py`), never `onGround`.
+
+## Rules for the games (Phil, 2026-09-04)
+- Three lives, death, GAME OVER, restart. One level to finish per game — Mario at the flagpole,
+  Pac-Man when the maze is clear, brawlers at `STAGE_LENGTH` — then it starts again.
+- **The attract loop must NOT die**; it plays the course. Stakes belong to whoever takes over
+  (`taken`). Without this the demo just loops death animations.
+
 ## Verification traps found here
 - **Headless Chrome clamps the layout viewport to 500px wide**, so `--window-size=390,...`
   renders at 500 and crops — apparent mobile overflow was an artifact, not a bug.
@@ -125,7 +144,8 @@ the older memory does not exist and `vercel --scope` rejects it.
 - Non-humanoid enemies are `sprite: "goomba" | "koopa" | "ghost"` on a FoeSpec, drawn by
   `drawCritter`. Never tint a downed enemy white — it renders as a solid slab.
 - The between-games card sits at 0.72 * height on purpose: the page title covers the middle.
-- Favicon is the thumbs-up emoji rendered by `src/app/icon.tsx` (next/og renders emoji fine).
+- Favicon is a **static** `src/app/icon.svg`. It was an `icon.tsx` using next/og, which broke a
+  production build: rendering an emoji makes it fetch a font, and that fetch failed on Vercel.
 
 ## Landing route for this repo
 Personal repo, no PR ceremony: commit + push to `main`, then verify the Vercel production deployment reaches `success` before reporting done.
