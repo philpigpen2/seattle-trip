@@ -173,8 +173,13 @@ export function createPacman(): CustomStage {
   let pops: Pop[] = [];
   let fruit = 0;
   let playerIndex = 1;
-  /** Direction the viewer asked for, and how long since they last asked. */
+  /**
+   * Steering by hand: `wanted` is the turn just asked for, taken at the first
+   * corner where it is legal; `held` is the direction being travelled until
+   * another is asked for. Both are dropped once nobody has played for a while.
+   */
   let wanted: Dir | null = null;
+  let held: Dir | null = null;
   let idle = 0;
 
   let pac: Actor = { col: 13, row: 23, off: 0.5, dir: 2, next: 2, speed: 0.09 };
@@ -333,6 +338,8 @@ export function createPacman(): CustomStage {
 
     setPlayer(index: number) {
       playerIndex = Math.max(0, Math.min(FAMILY.length - 1, index));
+      wanted = null;
+      held = null;
       resetActors();
     },
 
@@ -352,18 +359,26 @@ export function createPacman(): CustomStage {
         return;
       }
 
-      if (wanted !== null) {
+      if (wanted !== null || held !== null) {
         idle++;
         // Hand back to the attract mode if nobody has touched it for a while.
-        if (idle > 420) wanted = null;
+        if (idle > 420) {
+          wanted = null;
+          held = null;
+        }
       }
       advance(pac, true, () => {
-        if (wanted !== null) {
-          const nc = ((pac.col + DX[wanted]) % COLS + COLS) % COLS;
-          if (!isWall(nc, pac.row + DY[wanted], true)) return wanted;
-          // Keep going the current way until the requested turn opens up.
-          const kc = ((pac.col + DX[pac.dir]) % COLS + COLS) % COLS;
-          if (!isWall(kc, pac.row + DY[pac.dir], true)) return pac.dir;
+        const open = (d: Dir) =>
+          !isWall(((pac.col + DX[d]) % COLS + COLS) % COLS, pac.row + DY[d], true);
+        // Take the requested turn at the first corner where it fits, then keep
+        // travelling that way until another turn is asked for.
+        if (wanted !== null && open(wanted)) {
+          held = wanted;
+          wanted = null;
+        }
+        if (held !== null) {
+          if (open(held)) return held;
+          if (open(pac.dir)) return pac.dir;
         }
         return pacTarget();
       });

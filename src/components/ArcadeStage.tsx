@@ -14,6 +14,8 @@ type Props = {
   player?: number;
   /** Fires when the running game changes, so the selector can follow along. */
   onTheme?: (id: string) => void;
+  /** Receives a function for feeding directions in from an on-screen pad. */
+  onReady?: (input: (dir: 0 | 1 | 2 | 3) => void) => void;
   className?: string;
 };
 
@@ -23,14 +25,17 @@ export default function ArcadeStage({
   compact,
   player = 1,
   onTheme,
+  onReady,
   className,
 }: Props) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const handle = useRef<BrawlHandle | null>(null);
   const onThemeRef = useRef(onTheme);
+  const onReadyRef = useRef(onReady);
   useEffect(() => {
     onThemeRef.current = onTheme;
-  }, [onTheme]);
+    onReadyRef.current = onReady;
+  }, [onTheme, onReady]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -44,6 +49,7 @@ export default function ArcadeStage({
       onTheme: (id) => onThemeRef.current?.(id),
     });
     handle.current = h;
+    onReadyRef.current?.((dir) => h.input(dir));
     return () => {
       handle.current = null;
       h.destroy();

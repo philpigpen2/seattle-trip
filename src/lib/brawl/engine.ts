@@ -66,7 +66,11 @@ type Fx = {
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const choice = <T,>(a: readonly T[]): T => a[Math.floor(Math.random() * a.length)];
 
-export type BrawlHandle = { destroy: () => void; setPlayer: (index: number) => void };
+export type BrawlHandle = {
+  destroy: () => void;
+  setPlayer: (index: number) => void;
+  input: (dir: 0 | 1 | 2 | 3) => void;
+};
 
 export function mountBrawl(
   canvas: HTMLCanvasElement,
@@ -80,7 +84,7 @@ export function mountBrawl(
   } = {},
 ): BrawlHandle {
   const ctx2d = canvas.getContext("2d", { alpha: false });
-  if (!ctx2d) return { destroy: () => {}, setPlayer: () => {} };
+  if (!ctx2d) return { destroy: () => {}, setPlayer: () => {}, input: () => {} };
   const ctx: CanvasRenderingContext2D = ctx2d;
   ctx.imageSmoothingEnabled = false;
 
@@ -895,6 +899,9 @@ export function mountBrawl(
     setPlayer(index: number) {
       player = index;
       custom?.setPlayer?.(index);
+    },
+    input(dir: 0 | 1 | 2 | 3) {
+      custom?.input?.(dir);
     },
     destroy() {
       running = false;

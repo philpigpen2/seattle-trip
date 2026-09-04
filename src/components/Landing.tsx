@@ -16,7 +16,7 @@ export default function Landing({ game }: { game?: string }) {
   );
   const [current, setCurrent] = useState<string | null>(null);
   const [player, setPlayer] = useState(1);
-  const stageRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<((dir: 0 | 1 | 2 | 3) => void) | null>(null);
 
   const pick = useCallback((id: string | null) => {
     setPinned(id);
@@ -26,15 +26,10 @@ export default function Landing({ game }: { game?: string }) {
     window.history.replaceState(null, "", url);
   }, []);
 
-  // The D-pad drives the same input path the keyboard and swipes use.
-  const sendDir = useCallback((dir: 0 | 1 | 2 | 3) => {
-    const canvas = stageRef.current?.querySelector("canvas");
-    canvas?.dispatchEvent(
-      new KeyboardEvent("keydown", { key: ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"][dir] }),
-    );
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", { key: ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"][dir] }),
-    );
+  // The pad feeds the same input the keyboard and swipes use.
+  const sendDir = useCallback((dir: 0 | 1 | 2 | 3) => inputRef.current?.(dir), []);
+  const handleReady = useCallback((fn: (dir: 0 | 1 | 2 | 3) => void) => {
+    inputRef.current = fn;
   }, []);
 
   const playing = pinned !== null && PLAYABLE.has(pinned);
@@ -51,8 +46,13 @@ export default function Landing({ game }: { game?: string }) {
 
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[#0a0b23]">
-      <div className="absolute inset-0" ref={stageRef}>
-        <ArcadeStage theme={pinned ?? undefined} player={player} onTheme={setCurrent} />
+      <div className="absolute inset-0">
+        <ArcadeStage
+          theme={pinned ?? undefined}
+          player={player}
+          onTheme={setCurrent}
+          onReady={handleReady}
+        />
       </div>
 
       <div className="pointer-events-none relative z-10 flex min-h-screen w-full flex-col items-center overflow-hidden px-3 pt-[clamp(120px,19vh,196px)] text-center">
