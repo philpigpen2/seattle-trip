@@ -8,7 +8,7 @@ import GameSelector, { GAME_IDS } from "./GameSelector";
 import PlayerPicker from "./PlayerPicker";
 
 /** Games you can take control of. The rest play themselves for now. */
-const PLAYABLE = new Set(["pacman"]);
+const PLAYABLE = new Set(["pacman", "mario"]);
 /** Games that use the whole screen, so the page furniture gets out of the way. */
 const FULL_SCREEN = new Set(["pacman"]);
 

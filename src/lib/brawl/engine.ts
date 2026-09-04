@@ -366,6 +366,7 @@ export function mountBrawl(
 
   function step(f: Frame) {
     t++;
+    if (t % 24 === 0 && clock > 0) clock--;
     if (custom) {
       custom.step();
       return;
@@ -791,6 +792,18 @@ export function mountBrawl(
     const f = frame();
     if (custom) {
       custom.draw(f);
+      // A custom stage may still want the theme's status bar over the top.
+      theme.hud(f, {
+        score: custom.score(),
+        hi,
+        t,
+        lives: 3,
+        magic,
+        timer: clock,
+        health: [1, 1, 1, 1],
+        labels: ["1P", "2P", "3P", "4P"],
+        inks: ["#ffffff", "#ffffff", "#ffffff", "#ffffff"],
+      });
       drawScanlines(f);
       if (wipe > 0) drawWipe(f);
       return;
