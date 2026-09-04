@@ -44,7 +44,15 @@
   There is no idle hand-back. Do not reintroduce one.
 - Do NOT latch a `stalled` flag — an earlier attempt deadlocked because unstalling needed the
   very input that could not be consumed while stalled. Re-evaluate each frame instead.
-- Only Pac-Man is playable so far (`PLAYABLE` in `Landing.tsx`); the rest still play themselves.
+- **Super Mario Bros is a real platformer too** (`mario-sim.ts`, art in `mario-art.ts`):
+  World 1-1 as a looping tile map, gravity, variable-height jumps, axis-resolved tile
+  collision, pits, question blocks that pay out once, goombas and koopas that squash.
+  Hold left/right to run, up to jump. The family runs as a line and stops when you stop —
+  which is right for a platformer, unlike Pac-Man where he carries straight on.
+- Pac-Man and Mario are playable (`PLAYABLE` in `Landing.tsx`); the four brawlers still
+  play themselves.
+- A `custom` stage draws its own world; the engine still calls `theme.hud` over the top, so
+  Mario keeps the MARIO/COIN/WORLD/TIME bar and Pac-Man draws its own readout instead.
 
 ## Verification traps found here
 - **Headless Chrome clamps the layout viewport to 500px wide**, so `--window-size=390,...`
