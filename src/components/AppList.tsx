@@ -1,61 +1,22 @@
-import Link from "next/link";
+import "server-only";
+import type { ReactNode } from "react";
+import AppLibrary, { type AppItem } from "./AppLibrary";
 
-type Item = {
-  href: string;
-  title: string;
-  blurb: string;
-  external?: boolean;
-  feature?: boolean;
-};
-
-const ITEMS: Item[] = [
-  { href: "/dryht", title: "Dryht rollout", blurb: "Live release gates, current blockers & every stage", feature: true },
-  { href: "https://howto.philiplaney.com", title: "How To 🎲", blurb: "Game explainer videos — plan, bets & experiments", external: true },
-  { href: "https://gragras.philiplaney.com", title: "Gragras 👾", blurb: "Charlotte's alien-pet game & evening stories", external: true },
-  { href: "https://sinvitation.philiplaney.com", title: "Invitation ✉️", blurb: "One Night, Three Children", external: true },
-  { href: "https://flourish.philiplaney.com", title: "Flourish 🌱", blurb: "Private health & wellness — records, tracking & AI", external: true },
-  { href: "https://invites.philiplaney.com", title: "Party Invites 🎉", blurb: "Magical party invites & RSVPs", external: true },
-  { href: "https://everbound.philiplaney.com", title: "Everbound 📖", blurb: "Magical personalised storybooks", external: true },
-  { href: "https://cards.philiplaney.com", title: "Card Coach 💳", blurb: "Best card to use & which to get next", external: true },
-  { href: "/trip", title: "Trip Expenses Tracker", blurb: "Seattle Trip · May–Jun 2026" },
-  { href: "/IQ", title: "IQ UK Homes 🏡", blurb: "London property portfolio", external: true },
+// Keep the catalogue in the server graph. Home passes it to the interactive
+// library only after its authentication check has succeeded.
+const ITEMS: AppItem[] = [
+  { href: "https://flourish.philiplaney.com", title: "Flourish", description: "Your health records, wellness tracking and a little help along the way.", category: "Everyday", icon: "leaf", tone: "green", external: true },
+  { href: "https://cards.philiplaney.com", title: "Card Coach", description: "Find the right credit card for a purchase, or your next application.", category: "Everyday", icon: "wallet", tone: "blue", external: true },
+  { href: "/IQ", title: "IQ UK Homes", description: "Keep track of your London property portfolio.", category: "Everyday", icon: "home", tone: "sand", external: true },
+  { href: "https://howto.philiplaney.com", title: "How To", description: "Explore the plans and experiments behind game explainer videos.", category: "Create & play", icon: "dice", tone: "gold", external: true },
+  { href: "https://gragras.philiplaney.com", title: "Gragras", description: "Charlotte’s world of alien pets and evening stories.", category: "Create & play", icon: "alien", tone: "violet", external: true },
+  { href: "https://sinvitation.philiplaney.com", title: "Invitation", description: "One Night, Three Children. This app is currently unavailable.", category: "Create & play", icon: "envelope", tone: "rose", external: true, unavailable: true },
+  { href: "https://invites.philiplaney.com", title: "Party Invites", description: "Make a party invitation and keep all your RSVPs together.", category: "Create & play", icon: "party", tone: "rose", external: true },
+  { href: "https://everbound.philiplaney.com", title: "Everbound", description: "Create personalised storybooks with a little magic.", category: "Create & play", icon: "book", tone: "violet", external: true },
+  { href: "/trip", title: "Trip Expenses", description: "Split the Seattle trip costs and see who owes what. May–June 2026.", category: "Projects", icon: "map", tone: "blue" },
+  { href: "/dryht", title: "Dryht rollout", description: "Follow release progress, current blockers and what comes next.", category: "Projects", icon: "milestone", tone: "sand" },
 ];
 
-function Card({ item }: { item: Item }) {
-  const inner = (
-    <>
-      <div>
-        <div className={`font-semibold ${item.feature ? "text-white" : "text-gray-900"}`}>{item.title}</div>
-        <div className={`text-sm ${item.feature ? "text-gray-400" : "text-gray-500"}`}>{item.blurb}</div>
-      </div>
-      <span className={`text-lg ${item.feature ? "text-amber-300 group-hover:text-amber-200" : "text-gray-400 group-hover:text-gray-600"}`}>
-        →
-      </span>
-    </>
-  );
-  const cls = `flex items-center justify-between w-full rounded-xl px-5 py-4 transition-colors group border ${
-    item.feature
-      ? "bg-gray-900 hover:bg-gray-800 border-gray-900"
-      : "bg-gray-50 hover:bg-gray-100 border-gray-200"
-  }`;
-
-  return item.external ? (
-    <a href={item.href} className={cls}>
-      {inner}
-    </a>
-  ) : (
-    <Link href={item.href} className={cls}>
-      {inner}
-    </Link>
-  );
-}
-
-export default function AppList() {
-  return (
-    <div className="space-y-3">
-      {ITEMS.map((item) => (
-        <Card key={item.href} item={item} />
-      ))}
-    </div>
-  );
+export default function AppList({ account }: { account?: ReactNode }) {
+  return <AppLibrary items={ITEMS} account={account} />;
 }

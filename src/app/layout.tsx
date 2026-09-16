@@ -30,12 +30,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       appearance={{
         variables: {
           colorPrimary: "#ffd166",
-          colorBackground: "#12122e",
-          colorText: "#f4f1ea",
-          colorTextSecondary: "#b9b2e0",
-          colorInputBackground: "#1c1c3e",
-          colorInputText: "#f4f1ea",
-          borderRadius: "2px",
+          colorPrimaryForeground: "#17182d",
+          colorBackground: "#17182d",
+          colorForeground: "#faf7ef",
+          colorMutedForeground: "#c2c3d5",
+          colorNeutral: "#faf7ef",
+          colorInput: "#24263e",
+          colorInputForeground: "#faf7ef",
+          colorBorder: "#56596f",
+          colorRing: "#ffd166",
+          borderRadius: "12px",
+          fontFamily: "var(--font-geist-sans), Arial, sans-serif",
         },
       }}
     >

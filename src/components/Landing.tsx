@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SignInButton } from "@clerk/nextjs";
+import Link from "next/link";
 import ArcadeStage from "./ArcadeStage";
 import DPad from "./DPad";
 import GameSelector, { GAME_IDS } from "./GameSelector";
@@ -12,7 +13,7 @@ const PLAYABLE = new Set(["pacman", "mario", "street", "goldenaxe", "tmnt", "con
 /** Games with an attack button rather than a jump. */
 const BRAWLERS = new Set(["street", "goldenaxe", "tmnt", "contra"]);
 
-export default function Landing({ game }: { game?: string }) {
+export default function Landing({ game, signedIn = false }: { game?: string; signedIn?: boolean }) {
   const [pinned, setPinned] = useState<string | null>(
     game && GAME_IDS.includes(game) ? game : null,
   );
@@ -93,7 +94,14 @@ export default function Landing({ game }: { game?: string }) {
         />
       </div>
 
-      {full ? (
+      {signedIn ? (
+        <nav aria-label="Arcade navigation" className="absolute inset-x-0 top-4 z-30 flex justify-center">
+          <h1 className="sr-only">Family arcade</h1>
+          <Link href="/" className="flex min-h-11 items-center gap-2 rounded-full border border-[#ffd166]/60 bg-[#12122e]/95 px-5 text-sm font-semibold text-[#ffe9a8] shadow-lg transition-colors hover:bg-[#24263e] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fe3ff]">
+            <span aria-hidden="true">←</span> Back to apps
+          </Link>
+        </nav>
+      ) : full ? (
         // A full-screen game gets a slim marquee instead of a centred block.
         <div className="pointer-events-none relative z-10 flex w-full items-center justify-between gap-3 px-4 pt-3">
           <div className="flex items-baseline gap-4">
@@ -113,9 +121,9 @@ export default function Landing({ game }: { game?: string }) {
           <SignInButton mode="modal" forceRedirectUrl="/" signUpForceRedirectUrl="/">
             <button
               type="button"
-              className="font-arcade pointer-events-auto cursor-pointer bg-[#12122e] px-3 py-2 text-[clamp(7px,1.4vw,11px)] text-[#ffd166] ring-2 ring-[#ffd166] transition-colors hover:bg-[#ffd166] hover:text-[#12122e]"
+              className="font-arcade pointer-events-auto min-h-11 cursor-pointer bg-[#12122e] px-3 py-2 text-[clamp(7px,1.4vw,11px)] text-[#ffd166] ring-2 ring-[#ffd166] transition-colors hover:bg-[#ffd166] hover:text-[#12122e] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fe3ff]"
             >
-              <span className="arcade-blink">&#9654;</span> PRESS START
+              <span className="arcade-blink" aria-hidden="true">&#9654;</span> SIGN IN
             </button>
           </SignInButton>
         </div>
@@ -135,12 +143,12 @@ export default function Landing({ game }: { game?: string }) {
               className="font-arcade pointer-events-auto mt-9 inline-block cursor-pointer bg-[#12122e] px-6 py-4 text-[clamp(9px,2vw,15px)] text-[#ffd166] transition-colors hover:bg-[#ffd166] hover:text-[#12122e] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#8fe3ff]"
               style={{ boxShadow: "0 0 0 4px #0a0b23, 0 0 0 8px #ffd166, 0 10px 0 4px #00000055" }}
             >
-              <span className="arcade-blink">&#9654;</span> PRESS START
+              <span className="arcade-blink" aria-hidden="true">&#9654;</span> SIGN IN
             </button>
           </SignInButton>
 
           <p className="font-arcade mt-5 text-[clamp(6px,1.4vw,9px)] leading-[2.2] text-[#b9b2e0] [text-shadow:2px_2px_0_#101033]">
-            SIGN IN TO CONTINUE
+            SIGN IN FOR YOUR APPS · PLAY BELOW
           </p>
         </div>
       )}
