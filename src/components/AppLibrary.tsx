@@ -39,19 +39,19 @@ function Arrow({ external = false }: { external?: boolean }) {
   return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{external ? <path d="M5 15 15 5M5 5h10v10" /> : <path d="M4 10h12m-5-5 5 5-5 5" />}</svg>;
 }
 
-function Card({ item }: { item: AppItem }) {
+function AppRow({ item }: { item: AppItem }) {
   const content = <>
     <span className={styles.appIcon} data-tone={item.tone}><AppIcon name={item.icon} /></span>
     <h3>{item.title}</h3>
     <p>{item.description}</p>
-    <span className={styles.cardAction}>{item.unavailable ? <span className={styles.unavailableLabel}>Unavailable</span> : <>Open {item.category === "Projects" ? "project" : "app"}<Arrow external={item.href.startsWith("https://")} /></>}</span>
+    <span className={styles.rowAction}>{item.unavailable ? <span className={styles.unavailableLabel}>Unavailable</span> : <Arrow external={item.href.startsWith("https://")} />}</span>
   </>;
 
-  if (item.unavailable) return <div className={`${styles.card} ${styles.unavailable}`}>{content}</div>;
+  if (item.unavailable) return <div className={`${styles.appRow} ${styles.unavailable}`}>{content}</div>;
 
   return item.external
-    ? <a href={item.href} className={styles.card}>{content}</a>
-    : <Link href={item.href} className={styles.card}>{content}</Link>;
+    ? <a href={item.href} className={styles.appRow}>{content}</a>
+    : <Link href={item.href} className={styles.appRow}>{content}</Link>;
 }
 
 export default function AppLibrary({ items, account }: { items: AppItem[]; account?: ReactNode }) {
@@ -117,8 +117,8 @@ export default function AppLibrary({ items, account }: { items: AppItem[]; accou
             if (!apps.length) return null;
             const id = `category-${CATEGORIES.indexOf(group)}`;
             return <section key={group} aria-labelledby={id} className={styles.section}>
-              <div className={styles.sectionHeading}><h2 id={id}>{group}</h2><span>{apps.length}</span><div aria-hidden="true" /></div>
-              <div className={styles.grid}>{apps.map((item) => <Card key={item.href} item={item} />)}</div>
+              <div className={styles.sectionHeading}><h2 id={id}>{group}</h2><span>{apps.length}</span></div>
+              <ul className={styles.appList} role="list">{apps.map((item) => <li key={item.href}><AppRow item={item} /></li>)}</ul>
             </section>;
           })}
         </div> : <div className={styles.empty}>
