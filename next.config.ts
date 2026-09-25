@@ -1,17 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Proxy philiplaney.com/IQ to the IQ UK Homes portfolio app (separate Vercel
-  // project, served under its own basePath /IQ). Does not affect /trip.
-  async rewrites() {
+  // IQ UK Homes moved from philiplaney.com/IQ (a rewrite into its /IQ basePath)
+  // to the root of its own subdomain. Old bookmarks and links, including
+  // lowercase /iq (Next matches sources case-insensitively), redirect permanently.
+  // Does not affect /trip.
+  async redirects() {
     return [
       {
         source: "/IQ",
-        destination: "https://iq-uk-homes-portfolio.vercel.app/IQ",
+        destination: "https://iq.philiplaney.com/",
+        permanent: true,
       },
       {
         source: "/IQ/:path*",
-        destination: "https://iq-uk-homes-portfolio.vercel.app/IQ/:path*",
+        destination: "https://iq.philiplaney.com/:path*",
+        permanent: true,
       },
     ];
   },

@@ -7,7 +7,7 @@ import AppLibrary, { type AppItem } from "./AppLibrary";
 const ITEMS: AppItem[] = [
   { href: "https://flourish.philiplaney.com", title: "Flourish", description: "Your health records, wellness tracking and a little help along the way.", category: "Everyday", icon: "leaf", tone: "green", external: true },
   { href: "https://cards.philiplaney.com", title: "Card Coach", description: "Find the right credit card for a purchase, or your next application.", category: "Everyday", icon: "wallet", tone: "blue", external: true },
-  { href: "/IQ", title: "IQ UK Homes", description: "Keep track of your London property portfolio.", category: "Everyday", icon: "home", tone: "sand", external: true },
+  { href: "https://iq.philiplaney.com", title: "IQ UK Homes", description: "Keep track of your London property portfolio.", category: "Everyday", icon: "home", tone: "sand", external: true },
   { href: "https://howto.philiplaney.com", title: "How To", description: "Explore the plans and experiments behind game explainer videos.", category: "Create & play", icon: "dice", tone: "gold", external: true },
   { href: "https://gragras.philiplaney.com", title: "Gragras", description: "Charlotte’s world of alien pets and evening stories.", category: "Create & play", icon: "alien", tone: "violet", external: true },
   { href: "https://sinvitation.philiplaney.com", title: "Invitation", description: "One Night, Three Children. This app is currently unavailable.", category: "Create & play", icon: "envelope", tone: "rose", external: true, unavailable: true },
