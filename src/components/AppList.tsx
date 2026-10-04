@@ -15,6 +15,7 @@ const ITEMS: AppItem[] = [
   { href: "https://everbound.philiplaney.com", title: "Everbound", description: "Create personalised storybooks with a little magic.", category: "Create & play", icon: "book", tone: "violet", external: true },
   { href: "/trip", title: "Trip Expenses", description: "Split the Seattle trip costs and see who owes what. May–June 2026.", category: "Projects", icon: "map", tone: "blue" },
   { href: "/dryht", title: "Dryht rollout", description: "Follow release progress, current blockers and what comes next.", category: "Projects", icon: "milestone", tone: "sand" },
+  { href: "https://blog.philiplaney.com", title: "Higher-ed blog", description: "Ideas and research for my higher-education writing.", category: "Projects", icon: "pen", tone: "green", external: true },
 ];
 
 export default function AppList({ account }: { account?: ReactNode }) {

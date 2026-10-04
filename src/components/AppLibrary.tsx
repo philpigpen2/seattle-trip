@@ -6,7 +6,7 @@ import styles from "./AppLibrary.module.css";
 
 const CATEGORIES = ["Everyday", "Create & play", "Projects"] as const;
 type Category = (typeof CATEGORIES)[number];
-type IconName = "leaf" | "wallet" | "home" | "dice" | "alien" | "envelope" | "party" | "book" | "map" | "milestone";
+type IconName = "leaf" | "wallet" | "home" | "dice" | "alien" | "envelope" | "party" | "book" | "map" | "milestone" | "pen";
 
 export type AppItem = {
   href: string;
@@ -31,6 +31,7 @@ function AppIcon({ name }: { name: IconName }) {
     book: <><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14" /><path d="M6 9h3m-3 4h3m6-4h3m-3 4h3" /></>,
     map: <><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16" /><path d="m5 12 2-2m4-1 2 2m4 2 2-2" /></>,
     milestone: <><path d="M5 20V4m0 1h11l4 4-4 4H5M3 20h4" /><path d="m10 9 2 2 3-3" /></>,
+    pen: <><path d="m4 20 1-5L16 4l4 4L9 19l-5 1Z" /><path d="m13 7 4 4M5 15l4 4" /></>,
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{artwork[name]}</svg>;
 }
